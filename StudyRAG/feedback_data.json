@@ -560,17 +560,41 @@
         "AI syllabus.pdf"
       ],
       "timestamp": "2026-11-27T09:59:49.381624"
+    },
+    {
+      "id": "fb_1795775294668",
+      "user_id": "student@gmail.com",
+      "query": "dsa syllabus",
+      "answer": "Hello Rohit! It is great to help you out today. \n\nBased on your uploaded documents, your course is **CSE306: Computer Networks** (Session 2026-27) [3, 4]. Even though you asked about a dsa syllabus, your uploaded file contains the complete Computer Networks syllabus and practical details. \n\nHere is a detailed, thorough breakdown of your **Computer Networks Syllabus**:\n\n**Course Overview & Prerequisites**\n\u2022 **Credits & Structure:** 3 Credits (Lecture: 2, Tutorial: 0, Practical: 2) [5].\n\u2022 **Prerequisites:** Network hardware and basics of IP addressing concepts, familiarity with Cisco Packet Trac",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [
+        "CN Syllabus.PDF"
+      ],
+      "timestamp": "2026-11-27T15:58:14.668464"
+    },
+    {
+      "id": "fb_1795775350904",
+      "user_id": "student@gmail.com",
+      "query": "dsa syllabus",
+      "answer": "Hello Rohit! It is great to help you out today. \n\nBased on your uploaded documents, your course is **CSE306: Computer Networks** (Session 2026-27) [3, 4]. Even though you asked about a dsa syllabus, your uploaded file contains the complete Computer Networks syllabus and practical details. \n\nHere is a detailed, thorough breakdown of your **Computer Networks Syllabus**:\n\n**Course Overview & Prerequisites**\n\u2022 **Credits & Structure:** 3 Credits (Lecture: 2, Tutorial: 0, Practical: 2) [5].\n\u2022 **Prerequisites:** Network hardware and basics of IP addressing concepts, familiarity with Cisco Packet Trac",
+      "rating": "dislike",
+      "opinion": "here just tell me that i have not file related to \"DSA\" please upload file or enable the web search",
+      "active_docs": [
+        "CN Syllabus.PDF"
+      ],
+      "timestamp": "2026-11-27T15:59:10.904864"
     }
   ],
   "learned_rules": [
-    "User prefers you to avoid: in a structured formate",
     "User prefers you to avoid: unit numbering are wrong",
     "User prefers you to avoid: when you use unit for this , so do it for all units",
     "User prefers you to avoid: it is wrong answer",
     "Keep explanations especially concise and direct; focus on high-yield exam takeaways.",
     "Provide thorough, detailed coverage of key concepts and sub-topics explicitly found in the notes.",
     "User prefers you to avoid: here user just say \"i am rohit\", so you should just response his chat not give this content directly, because user dont say anything , or ask",
-    "User prefers you to avoid: too slow"
+    "User prefers you to avoid: too slow",
+    "User prefers you to avoid: here just tell me that i have not file related to \"DSA\" please upload file or enable the web search"
   ],
   "user_rules": {
     "student_alex@test.com": [
@@ -580,7 +604,8 @@
     "student@gmail.com": [
       "Provide thorough, detailed coverage of key concepts and sub-topics explicitly found in the notes.",
       "User prefers you to avoid: here user just say \"i am rohit\", so you should just response his chat not give this content directly, because user dont say anything , or ask",
-      "User prefers you to avoid: too slow"
+      "User prefers you to avoid: too slow",
+      "User prefers you to avoid: here just tell me that i have not file related to \"DSA\" please upload file or enable the web search"
     ]
   }
 }

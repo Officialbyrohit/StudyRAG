@@ -38,15 +38,18 @@ class ChatRequest(BaseModel):
     active_docs: Optional[List[str]] = None
     user_id: Optional[str] = "guest"
     history: Optional[List[dict]] = None
+    web_search: Optional[bool] = False
 
 
 class SummaryRequest(BaseModel):
     doc_name: str
+    web_search: Optional[bool] = False
 
 
 class StudyToolRequest(BaseModel):
     doc_name: str
     count: Optional[int] = 5
+    web_search: Optional[bool] = False
 
 
 class RenameRequest(BaseModel):
@@ -248,7 +251,8 @@ async def chat_query(req: ChatRequest):
             query=req.query,
             active_docs=req.active_docs,
             user_id=req.user_id or "guest",
-            history=req.history
+            history=req.history,
+            web_search=bool(req.web_search)
         )
         return result
     except Exception as e:
@@ -262,7 +266,7 @@ async def summarize(req: SummaryRequest):
         raise HTTPException(status_code=400, detail="doc_name is required.")
 
     try:
-        summary_result = summarizer.summarize_document(req.doc_name)
+        summary_result = summarizer.summarize_document(req.doc_name, web_search=bool(req.web_search))
         return summary_result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Summarization failed: {str(e)}")
@@ -274,7 +278,7 @@ async def generate_mcq_quiz(req: StudyToolRequest):
     if not req.doc_name.strip():
         raise HTTPException(status_code=400, detail="doc_name is required.")
     try:
-        mcq_result = study_tools.generate_mcqs(req.doc_name, count=req.count or 5)
+        mcq_result = study_tools.generate_mcqs(req.doc_name, count=req.count or 5, web_search=bool(req.web_search))
         return mcq_result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"MCQ generation failed: {str(e)}")
@@ -286,7 +290,7 @@ async def generate_flashcards(req: StudyToolRequest):
     if not req.doc_name.strip():
         raise HTTPException(status_code=400, detail="doc_name is required.")
     try:
-        cards_result = study_tools.generate_flashcards(req.doc_name, count=req.count or 6)
+        cards_result = study_tools.generate_flashcards(req.doc_name, count=req.count or 6, web_search=bool(req.web_search))
         return cards_result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Flashcards generation failed: {str(e)}")
@@ -298,7 +302,7 @@ async def generate_cheatsheet(req: StudyToolRequest):
     if not req.doc_name.strip():
         raise HTTPException(status_code=400, detail="doc_name is required.")
     try:
-        sheet_result = study_tools.generate_cheatsheet(req.doc_name)
+        sheet_result = study_tools.generate_cheatsheet(req.doc_name, web_search=bool(req.web_search))
         return sheet_result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Cheat sheet generation failed: {str(e)}")

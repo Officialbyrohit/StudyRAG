@@ -1,7 +1,10 @@
 import logging
 import os
 import re
+from concurrent.futures import ThreadPoolExecutor
 from typing import List, Dict, Any, Optional
+from urllib.parse import urlparse
+import requests
 import config
 from core.vector_store import vector_store
 from core.ingestion import embed_query
@@ -36,6 +39,95 @@ class RAGEngine:
             "I don't know based on the provided notes. "
             "This information is not mentioned in your uploaded documents."
         )
+
+    def _fetch_web_search_results(self, query: str, max_results: int = 5) -> List[Dict[str, str]]:
+        """Fetch live web results from free public JSON APIs (DuckDuckGo Instant Answer + Wikipedia)."""
+        headers = {"User-Agent": "StudyRAG/1.0 (https://localhost)"}
+
+        def query_ddg() -> List[Dict[str, str]]:
+            items: List[Dict[str, str]] = []
+            try:
+                res = requests.get(
+                    "https://api.duckduckgo.com/",
+                    params={"q": query, "format": "json", "no_html": 1, "skip_disambig": 1},
+                    headers=headers,
+                    timeout=5
+                )
+                if res.status_code in (200, 202):
+                    data = res.json()
+                    abs_text = (data.get("AbstractText") or "").strip()
+                    abs_url = (data.get("AbstractURL") or "").strip()
+                    heading = (data.get("Heading") or "").strip()
+                    if abs_text and abs_url:
+                        items.append({
+                            "title": heading or "DuckDuckGo Instant Answer",
+                            "uri": abs_url,
+                            "domain": urlparse(abs_url).netloc,
+                            "snippet": abs_text
+                        })
+                    for topic in data.get("RelatedTopics", [])[:3]:
+                        if isinstance(topic, dict) and topic.get("Text") and topic.get("FirstURL"):
+                            t_url = topic["FirstURL"]
+                            items.append({
+                                "title": topic["Text"].split(" - ")[0][:80],
+                                "uri": t_url,
+                                "domain": urlparse(t_url).netloc,
+                                "snippet": topic["Text"]
+                            })
+            except Exception as e:
+                logger.warning(f"DuckDuckGo web search failed: {e}")
+            return items
+
+        def query_wiki() -> List[Dict[str, str]]:
+            items: List[Dict[str, str]] = []
+            try:
+                res = requests.get(
+                    "https://en.wikipedia.org/w/api.php",
+                    params={
+                        "action": "query",
+                        "generator": "search",
+                        "gsrsearch": query,
+                        "gsrlimit": 3,
+                        "prop": "extracts|info",
+                        "exintro": 1,
+                        "explaintext": 1,
+                        "exsentences": 4,
+                        "inprop": "url",
+                        "format": "json"
+                    },
+                    headers=headers,
+                    timeout=5
+                )
+                if res.status_code == 200:
+                    pages = res.json().get("query", {}).get("pages", {})
+                    for page in sorted(pages.values(), key=lambda p: p.get("index", 99)):
+                        url = (page.get("fullurl") or "").strip()
+                        extract = (page.get("extract") or "").strip()
+                        title = (page.get("title") or "").strip()
+                        if url and extract:
+                            items.append({
+                                "title": f"{title} - Wikipedia" if title else "Wikipedia",
+                                "uri": url,
+                                "domain": "en.wikipedia.org",
+                                "snippet": extract[:600]
+                            })
+            except Exception as e:
+                logger.warning(f"Wikipedia web search failed: {e}")
+            return items
+
+        results: List[Dict[str, str]] = []
+        seen_uris = set()
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            ddg_future = pool.submit(query_ddg)
+            wiki_future = pool.submit(query_wiki)
+            for item in ddg_future.result() + wiki_future.result():
+                uri = item.get("uri")
+                if uri and uri not in seen_uris:
+                    seen_uris.add(uri)
+                    results.append(item)
+                    if len(results) >= max_results:
+                        break
+        return results
 
     def _build_retrieval_query(
         self,
@@ -86,12 +178,14 @@ class RAGEngine:
         query: str,
         active_docs: Optional[List[str]] = None,
         user_id: Optional[str] = "guest",
-        history: Optional[List[Dict[str, str]]] = None
+        history: Optional[List[Dict[str, str]]] = None,
+        web_search: bool = False
     ) -> Dict[str, Any]:
         """
         Executes Hybrid Smart RAG retrieval and generation:
         - Understands follow-ups using conversation history
         - Grounds facts in uploaded documents with inline citations [1], [2]
+        - Optionally enables Google Web Search when web_search=True
         - Uses AI knowledge to explain/expand topics from the notes & syllabus
         - Only refuses when the query is genuinely unrelated to the notes and study session
         """
@@ -105,42 +199,49 @@ class RAGEngine:
                 "citations": [],
                 "is_refusal": False,
                 "used_external_info": False,
+                "web_search_used": False,
+                "web_sources": [],
                 "retrieved_count": 0
             }
 
-        # Step 1: Generate query vector (enriched with recent context for follow-ups)
-        retrieval_query = self._build_retrieval_query(query, history)
-        query_vector = embed_query(retrieval_query)
+        # Step 1 & 2: Retrieve top matching chunks from Qdrant (unless active_docs is explicitly empty)
+        if active_docs is not None and len(active_docs) == 0:
+            retrieved_chunks = []
+        else:
+            retrieval_query = self._build_retrieval_query(query, history)
+            query_vector = embed_query(retrieval_query)
+            retrieved_chunks = vector_store.search(
+                query_vector=query_vector,
+                top_k=config.TOP_K_RETRIEVAL,
+                active_docs=active_docs
+            )
 
-        # Step 2: Retrieve top matching chunks from Qdrant
-        retrieved_chunks = vector_store.search(
-            query_vector=query_vector,
-            top_k=config.TOP_K_RETRIEVAL,
-            active_docs=active_docs
-        )
-
-        # Step 3: Smart Refusal Check (only hard-refuse when there are no chunks AND no active conversation)
-        if not retrieved_chunks and not history:
+        # Step 3: Smart Refusal Check (strictly require retrieved chunks when Web Search is off)
+        if not web_search and not retrieved_chunks:
             return {
                 "answer": self.refusal_message,
                 "citations": [],
                 "is_refusal": True,
                 "used_external_info": False,
+                "web_search_used": False,
+                "web_sources": [],
                 "retrieved_count": 0
             }
 
         max_score = max((c["score"] for c in retrieved_chunks), default=0.0)
-        print(f"[RAG SEARCH] Query: '{query}' | Docs: {active_docs} | Top Score: {max_score:.4f} | Threshold: {config.SIMILARITY_THRESHOLD}")
+        print(f"[RAG SEARCH] Query: '{query}' | Docs: {active_docs} | WebSearch: {web_search} | Top Score: {max_score:.4f} | Threshold: {config.SIMILARITY_THRESHOLD}")
 
         # Let the AI brain decide for low-score queries when there is conversation history or active docs;
-        # only hard-refuse if there is no history and score is very low (< 0.20).
-        if not history and max_score < 0.20:
+        # only hard-refuse if Web Search is off, there is no history, and score is very low (< 0.20).
+        if not web_search and not history and max_score < 0.20:
             print(f"[RAG REFUSAL] Top score {max_score:.4f} < hard floor 0.20 (no history)")
             return {
                 "answer": self.refusal_message,
                 "citations": [],
                 "is_refusal": True,
                 "used_external_info": False,
+                "web_search_used": False,
+                "web_sources": [],
                 "retrieved_count": len(retrieved_chunks),
                 "top_score": max_score
             }
@@ -168,41 +269,74 @@ class RAGEngine:
         formatted_context = "\n\n".join(context_blocks) if context_blocks else "No matching excerpts retrieved."
         formatted_history = self._format_history(history)
 
-        system_instruction = (
-            "You are StudyRAG, an intelligent, friendly, and interactive AI study tutor. "
-            "You operate in Hybrid Smart Mode: you prioritize the student's uploaded notes and syllabus, "
-            "while also using your academic knowledge when helpful to explain concepts clearly.\n\n"
-            "MANDATORY RULES:\n"
-            "1. NOTES FIRST & CITATIONS: Always check the provided DOCUMENT SOURCES and CONVERSATION HISTORY first. "
-            "Every fact taken from the document sources MUST include an inline citation like [1], [2], etc.\n"
-            "2. EXTERNAL / OUT-OF-FILES INFORMATION DISCLOSURE (STRICT): Whenever ANY part of your answer uses external information "
-            "or academic knowledge not literally written inside the provided DOCUMENT SOURCES (such as expanding a syllabus topic, "
-            "defining a term not defined in the file, adding examples, or supplying formulas outside the file), you MUST:\n"
-            "   a) Put [EXTERNAL_INFO_USED] on the very first line of your response.\n"
-            "   b) Explicitly tell the student in clear text that external information from outside their uploaded files was used "
-            "(for example: **External Information Used:** This response includes external information from outside your uploaded files.).\n"
-            "   c) Clearly separate what comes from the files vs external knowledge "
-            "(for example: **From your uploaded files:** ... [1] followed by **External information (outside your files):** ...).\n"
-            "   If 100% of your answer comes strictly from DOCUMENT SOURCES, do NOT put [EXTERNAL_INFO_USED].\n"
-            "3. DEFINITIONS & FORMULAS: Keep definitions short and simple to understand. When formulas are relevant, write them in a simple, clear way and cover all relevant formulas for the topic.\n"
-            "4. FOLLOW-UPS & INTENT: Use CONVERSATION HISTORY to understand short follow-ups like 'more details', "
-            "'explain point 2', 'give an example', or 'elaborate'. Never say you don't know to a valid follow-up about the notes.\n"
-            "5. WHEN TO REFUSE: ONLY output EXACTLY:\n"
-            f'   "{self.refusal_message}"\n'
-            "   when the user's question is completely off-topic and unrelated to the uploaded documents and study conversation "
-            "(such as cooking recipes, sports scores, celebrity gossip, or random unrelated trivia).\n"
-            "6. CRITICAL: NEVER use backticks (`) anywhere in your output. Do NOT wrap words, phrases, or terms in backticks. Use normal text and **bold** for key terms.\n\n"
-            "INTERACTIVE CHAT STYLE:\n"
-            "- Be warm, clear, and engaging like a great tutor so the student enjoys learning.\n"
-            "- Use **bold** for section headers and key concepts.\n"
-            "- Use bullet points (•) with clear spacing between points so the student can read easily.\n"
-            "- When appropriate, end with a short, helpful follow-up question or offer (e.g., offering an example or practice question)."
-        )
+        if web_search:
+            system_instruction = (
+                "You are StudyRAG, an intelligent, friendly, and interactive AI study tutor. "
+                "Web Search is ENABLED: you prioritize the student's uploaded notes and syllabus, "
+                "while also using live Web Search results and your academic knowledge when helpful.\n\n"
+                "MANDATORY RULES:\n"
+                "1. NOTES FIRST & CITATIONS: Always check the provided DOCUMENT SOURCES and CONVERSATION HISTORY first. "
+                "Every fact taken from the document sources MUST include an inline citation like [1], [2], etc.\n"
+                "2. EXTERNAL / OUT-OF-FILES INFORMATION DISCLOSURE (STRICT): Whenever ANY part of your answer uses external information "
+                "or academic knowledge not literally written inside the provided DOCUMENT SOURCES (such as expanding a syllabus topic, "
+                "defining a term not defined in the file, adding examples, web search results, or supplying formulas outside the file), you MUST:\n"
+                "   a) Put [EXTERNAL_INFO_USED] on the very first line of your response.\n"
+                "   b) Explicitly tell the student in clear text that external information from outside their uploaded files was used "
+                "(for example: **External Information Used:** This response includes external information from outside your uploaded files.).\n"
+                "   c) Clearly separate what comes from the files vs external/web knowledge when both are present.\n"
+                "   If 100% of your answer comes strictly from DOCUMENT SOURCES, do NOT put [EXTERNAL_INFO_USED].\n"
+                "3. DEFINITIONS & FORMULAS: Keep definitions short and simple to understand. When formulas are relevant, write them in a simple, clear way and cover all relevant formulas for the topic.\n"
+                "4. FOLLOW-UPS & INTENT: Use CONVERSATION HISTORY to understand short follow-ups like 'more details', "
+                "'explain point 2', 'give an example', or 'elaborate'. Never say you don't know to a valid follow-up about the notes.\n"
+                "5. WEB SEARCH ENABLED: Live Web Search results are provided below under LIVE WEB SEARCH RESULTS. "
+                "Prioritize DOCUMENT SOURCES (with inline citations [1], [2]) if relevant, and use LIVE WEB SEARCH RESULTS "
+                "plus your verified knowledge to answer clearly and accurately. Do NOT output the document refusal message when Web Search is enabled.\n"
+                "6. CRITICAL: NEVER use backticks (`) anywhere in your output. Do NOT wrap words, phrases, or terms in backticks. Use normal text and **bold** for key terms.\n\n"
+                "INTERACTIVE CHAT STYLE:\n"
+                "- Be warm, clear, and engaging like a great tutor so the student enjoys learning.\n"
+                "- Use **bold** for section headers and key concepts.\n"
+                "- Use bullet points (•) with clear spacing between points so the student can read easily.\n"
+                "- When appropriate, end with a short, helpful follow-up question or offer (e.g., offering an example or practice question)."
+            )
+        else:
+            system_instruction = (
+                "You are StudyRAG, a strictly grounded academic study assistant. "
+                "Web Search is OFF: you MUST answer strictly and EXCLUSIVELY from the provided DOCUMENT SOURCES from the student's selected file(s).\n\n"
+                "MANDATORY RULES:\n"
+                "1. SELECTED FILE ONLY (STRICT): Every single fact, definition, explanation, or formula in your response MUST come literally and directly "
+                "from the provided DOCUMENT SOURCES, and MUST include an inline citation like [1], [2], etc.\n"
+                "2. ZERO EXTERNAL INFORMATION: Do NOT use any outside knowledge, general academic knowledge, internet facts, or unstated definitions/expansions "
+                "not explicitly written in DOCUMENT SOURCES — even if the document only lists topic names (such as a syllabus) or the student asks for 'more details' beyond what is written in the file.\n"
+                "3. WHEN TO REFUSE: If the requested answer or detail is not explicitly written in DOCUMENT SOURCES, output EXACTLY:\n"
+                f'   "{self.refusal_message}"\n'
+                "4. FOLLOW-UPS: Use CONVERSATION HISTORY only to understand which topic in the selected file the student is referring to, "
+                "then answer strictly using ONLY facts written in DOCUMENT SOURCES with inline citations [1], [2].\n"
+                "5. DEFINITIONS & FORMULAS: Keep definitions short and simple, and state formulas simply — using ONLY what appears in DOCUMENT SOURCES.\n"
+                "6. CRITICAL: NEVER use backticks (`) anywhere in your output. Do NOT wrap words, phrases, or terms in backticks. Use normal text and **bold** for key terms."
+            )
 
         # Inject continuous learning & user feedback guidance dynamically
         learned_guidance = feedback_memory.get_learned_guidance(user_id=user_id)
         if learned_guidance:
             system_instruction += "\n" + learned_guidance
+            if not web_search:
+                system_instruction += "\nSTRICT REMINDER: Web Search is OFF — never add external information outside DOCUMENT SOURCES."
+
+        web_results = self._fetch_web_search_results(query) if web_search else []
+        web_sources = [
+            {"title": w["title"], "uri": w["uri"], "domain": w["domain"]}
+            for w in web_results
+        ]
+        web_context_section = ""
+        if web_search:
+            if web_results:
+                web_blocks = [
+                    f"[Web {i}] ({w['title']} | {w['uri']}):\n{w['snippet']}"
+                    for i, w in enumerate(web_results, 1)
+                ]
+                web_context_section = "=== LIVE WEB SEARCH RESULTS ===\n" + "\n\n".join(web_blocks) + "\n\n"
+            else:
+                web_context_section = "=== LIVE WEB SEARCH RESULTS ===\nNo instant web snippets returned; answer using verified general knowledge and mark as external information.\n\n"
 
         history_section = (
             f"=== CONVERSATION HISTORY ===\n{formatted_history}\n\n"
@@ -214,8 +348,12 @@ class RAGEngine:
             f"Student Question: {query}\n\n"
             f"=== DOCUMENT SOURCES ===\n"
             f"{formatted_context}\n\n"
-            f"Respond helpfully using the document sources (with inline citations [1], [2]) and conversation context, "
-            f"and expand with clear academic explanations when the student asks for more details."
+            f"{web_context_section}"
+            + (
+                "Respond helpfully using the document sources (with inline citations [1], [2]) and conversation context, plus live web search results and external knowledge as needed."
+                if web_search else
+                "Answer strictly and ONLY from the DOCUMENT SOURCES above with inline citations [1], [2]. Do NOT add any outside or external information. If the answer is not in DOCUMENT SOURCES, reply with the exact refusal message."
+            )
         )
 
         # Step 5: Call Gemini API with multi-model fallback
@@ -239,7 +377,7 @@ class RAGEngine:
                             temperature=0.1,
                         )
                     )
-                    response_text = response.text.strip()
+                    response_text = (response.text or "").strip()
                 else:
                     model = genai_legacy.GenerativeModel(
                         model_name=model_name,
@@ -275,28 +413,46 @@ class RAGEngine:
         else:
             active_citations = []
 
-        has_external_phrase = bool(
-            re.search(
-                r"\b(external information|outside (?:your |the )?(?:uploaded )?files?|beyond (?:your |the )?(?:uploaded )?(?:notes|files|documents))\b",
-                response_text,
-                re.IGNORECASE
-            )
-        )
-        used_external_info = (not is_refusal) and (
-            has_external_tag or has_external_phrase or len(active_citations) == 0
-        )
+        # When Web Search is OFF, strictly require at least one cited source from the selected file(s)
+        if not web_search and not is_refusal and len(active_citations) == 0:
+            response_text = self.refusal_message
+            is_refusal = True
+            active_citations = []
 
-        if used_external_info and not has_external_phrase:
-            response_text = (
-                "**External Information Used:** Note — this response includes external information from outside your uploaded files.\n\n"
-                + response_text
+        if not web_search:
+            used_external_info = False
+            web_search_used = False
+            web_sources = []
+        else:
+            has_external_phrase = bool(
+                re.search(
+                    r"\b(external information|web search|outside (?:your |the )?(?:uploaded )?files?|beyond (?:your |the )?(?:uploaded )?(?:notes|files|documents))\b",
+                    response_text,
+                    re.IGNORECASE
+                )
             )
+            used_external_info = (not is_refusal) and (
+                has_external_tag or has_external_phrase or len(active_citations) == 0 or len(web_sources) > 0
+            )
+            web_search_used = (not is_refusal) and bool(
+                len(web_sources) > 0 or used_external_info
+            )
+
+            if used_external_info and not has_external_phrase:
+                notice_prefix = (
+                    "**External Information Used (Web Search):** Note — this response includes external information from live web search outside your uploaded files.\n\n"
+                    if web_search_used
+                    else "**External Information Used:** Note — this response includes external information from outside your uploaded files.\n\n"
+                )
+                response_text = notice_prefix + response_text
 
         return {
             "answer": response_text,
             "citations": active_citations,
             "is_refusal": is_refusal,
             "used_external_info": used_external_info,
+            "web_search_used": web_search_used,
+            "web_sources": web_sources if not is_refusal else [],
             "retrieved_count": len(retrieved_chunks),
             "top_score": max_score
         }

@@ -205,6 +205,25 @@
     .profile-dropdown.open {
       display: block;
     }
+
+    /* Dynamic 3D float + glass spotlight for file cards & AI tools */
+    .float-tilt-card {
+      transform-style: preserve-3d;
+      will-change: transform, box-shadow;
+      transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.25s ease,
+        border-color 0.25s ease,
+        background-color 0.25s ease;
+    }
+
+    .float-tilt-card:not(:disabled):hover {
+      background-image: radial-gradient(
+        180px circle at var(--mx, 50%) var(--my, 50%),
+        rgba(255, 255, 255, 0.08),
+        transparent 70%
+      );
+      box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.06);
+    }
   </style>
   <script src="https://cdn.tailwindcss.com"></script>
   <script id="tailwind-config">
@@ -357,12 +376,12 @@
 
       <!-- Right Header Actions -->
       <div class="flex items-center gap-space-md">
-        <!-- Header Upload Files Button -->
-        <button id="header-upload-btn"
-          class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#2563eb] hover:bg-[#3b82f6] text-white font-label-meta text-xs font-bold transition-all cursor-pointer active:scale-95"
-          title="Upload Document or Notes">
-          <span class="material-symbols-outlined text-[17px]">cloud_upload</span>
-          <span>Upload Files</span>
+        <!-- Header Web Search Toggle Button -->
+        <button id="web-search-toggle-btn" type="button" aria-pressed="false"
+          class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#27272A] hover:bg-[#323238] text-slate-300 border border-[#4B4B54] hover:border-slate-300/60 font-label-meta text-xs font-bold transition-all cursor-pointer active:scale-95"
+          title="Enable or disable Web Search for answers">
+          <span class="material-symbols-outlined text-[17px]" style="font-variation-settings: 'FILL' 0, 'wght' 400;">language</span>
+          <span>Web Search</span>
         </button>
 
         <!-- Continuous Learning Preferences Button (Hidden as requested) -->
@@ -472,7 +491,7 @@
                     </button>
                     <div class="flex items-center gap-2">
                       <button id="select-all-btn"
-                        class="font-label-meta text-xs text-[#60a5fa] hover:text-[#93c5fd] font-bold cursor-pointer">Select
+                        class="font-label-meta text-xs text-slate-300 hover:text-white font-bold transition-colors cursor-pointer">Select
                         all</button>
                       <button id="left-panel-collapse-btn"
                         class="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-white hover:bg-neutral-800 rounded transition-colors cursor-pointer"
@@ -503,25 +522,25 @@
                 </span>
                 <div class="grid grid-cols-2 gap-2">
                   <button id="summarize-btn"
-                    class="py-2 px-2 rounded-lg bg-[#18181C] hover:bg-[#222228] text-blue-200 border border-blue-500/50 hover:border-blue-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    class="float-tilt-card py-2 px-2 rounded-lg bg-[#18181C] hover:bg-[#222228] text-blue-200 border border-blue-500/50 hover:border-blue-400 text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     title="Generate structured document summary">
                     <span class="material-symbols-outlined text-[16px] text-blue-400">summarize</span>
                     <span>Summary</span>
                   </button>
                   <button id="mcq-btn"
-                    class="py-2 px-2 rounded-lg bg-[#18181C] hover:bg-[#222228] text-emerald-200 border border-emerald-500/50 hover:border-emerald-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    class="float-tilt-card py-2 px-2 rounded-lg bg-[#18181C] hover:bg-[#222228] text-emerald-200 border border-emerald-500/50 hover:border-emerald-400 text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     title="Generate 5-question practice quiz">
                     <span class="material-symbols-outlined text-[16px] text-emerald-400">quiz</span>
                     <span>MCQ Quiz</span>
                   </button>
                   <button id="flashcards-btn"
-                    class="py-2 px-2 rounded-lg bg-[#18181C] hover:bg-[#222228] text-amber-200 border border-amber-500/50 hover:border-amber-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    class="float-tilt-card py-2 px-2 rounded-lg bg-[#18181C] hover:bg-[#222228] text-amber-200 border border-amber-500/50 hover:border-amber-400 text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     title="Generate active recall flashcards">
                     <span class="material-symbols-outlined text-[16px] text-amber-400">style</span>
                     <span>Flashcards</span>
                   </button>
                   <button id="cheatsheet-btn"
-                    class="py-2 px-2 rounded-lg bg-[#18181C] hover:bg-[#222228] text-purple-200 border border-purple-500/50 hover:border-purple-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    class="float-tilt-card py-2 px-2 rounded-lg bg-[#18181C] hover:bg-[#222228] text-purple-200 border border-purple-500/50 hover:border-purple-400 text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     title="Generate 1-page high-yield revision cheat sheet">
                     <span class="material-symbols-outlined text-[16px] text-purple-400">fact_check</span>
                     <span>Cheat Sheet</span>
@@ -633,9 +652,9 @@
                 <div class="flex items-center gap-2 px-1">
                   <!-- "+" Upload Button -->
                   <button id="chat-upload-btn"
-                    class="w-8 h-8 rounded-xl bg-[#2A2A32] hover:bg-[#383842] text-slate-200 hover:text-white flex items-center justify-center transition-all cursor-pointer shrink-0 border border-[#484854] shadow-xs"
+                    class="group/plus w-8 h-8 rounded-xl bg-[#2A2A32] hover:bg-[#383842] text-slate-200 hover:text-white flex items-center justify-center transition-all cursor-pointer shrink-0 border border-[#484854] shadow-xs"
                     title="Upload Document or Notes (+)">
-                    <span class="material-symbols-outlined text-[20px] font-bold">add</span>
+                    <span class="material-symbols-outlined text-[20px] font-bold transition-transform duration-300 ease-out group-hover/plus:rotate-180">add</span>
                   </button>
 
                   <input id="query-input"
@@ -740,7 +759,7 @@
   </div>
 
   <!-- Client JavaScript -->
-  <script src="/static/js/app.js?v=2.5"></script>
+  <script src="/static/js/app.js?v=2.9"></script>
 </body>
 
 </html>

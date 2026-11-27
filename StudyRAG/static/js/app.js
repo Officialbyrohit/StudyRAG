@@ -34,8 +34,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const dropdownEmail = document.getElementById("dropdown-email");
   const signOutBtn = document.getElementById("sign-out-btn");
 
-  // Document Management & Ingestion
-  const headerUploadBtn = document.getElementById("header-upload-btn");
+  // Document Management & Ingestion / Web Search Toggle
+  const webSearchToggleBtn = document.getElementById("web-search-toggle-btn");
   const sidebarUploadBtn = document.getElementById("sidebar-upload-btn");
   const chatUploadBtn = document.getElementById("chat-upload-btn");
   const toggleCorpusBtn = document.getElementById("toggle-corpus-btn");
@@ -88,14 +88,51 @@ document.addEventListener("DOMContentLoaded", () => {
   let documents = [];
   let speechRecognition = null;
   let isListening = false;
+  let webSearchEnabled = localStorage.getItem("studyrag_web_search") === "true";
 
   // Initialize
   initAuth();
   initTheme();
   initCollapsiblePanels();
+  initWebSearchToggle();
+  initDynamicFloatEffects();
   initVoiceInput();
   initLearningPreferences();
   loadDocuments();
+
+  // Dynamic 3D float & subtle pointer-tilt effect for file cards and AI Tool buttons
+  function attachDynamicFloatEffect(el) {
+    if (!el) return;
+    el.classList.add("float-tilt-card");
+
+    el.addEventListener("mousemove", (e) => {
+      if (el.disabled) return;
+      if (el.querySelector(".doc-dropdown-menu:not(.hidden)")) {
+        el.style.transform = "";
+        return;
+      }
+      const rect = el.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const px = (x / rect.width) - 0.5;
+      const py = (y / rect.height) - 0.5;
+      const rotateY = (px * 6).toFixed(2);
+      const rotateX = (-py * 6).toFixed(2);
+
+      el.style.setProperty("--mx", `${x.toFixed(1)}px`);
+      el.style.setProperty("--my", `${y.toFixed(1)}px`);
+      el.style.transform = `perspective(700px) translateY(-4px) scale(1.015) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    });
+
+    el.addEventListener("mouseleave", () => {
+      el.style.transform = "";
+    });
+  }
+
+  function initDynamicFloatEffects() {
+    [summarizeBtn, mcqBtn, flashcardsBtn, cheatsheetBtn].forEach(attachDynamicFloatEffect);
+  }
 
   // ----------------------------------------------------
   // Dark Theme (Default Reference Dark Mode)
@@ -415,15 +452,8 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
-    // Header Upload Button (Requirement 2: Orange area)
-    if (headerUploadBtn) {
-      headerUploadBtn.addEventListener("click", () => {
-        toggleLeftPanel(false);
-        setTimeout(() => {
-          if (fileUploader) fileUploader.click();
-        }, 120);
-      });
-    }
+    // Web Search Toggle Button (Header top-right)
+    // Handled via initWebSearchToggle()
 
     // Dynamic Quick Tools Bar (Requirement 3: Green circled section)
     // Smoothly reveals when user moves cursor near or on the chat bar, or focuses query input; otherwise hides
@@ -446,6 +476,26 @@ document.addEventListener("DOMContentLoaded", () => {
         queryInput.addEventListener("blur", () => setTimeout(hideTools, 200));
       }
     }
+  }
+
+  function initWebSearchToggle() {
+    if (!webSearchToggleBtn) return;
+
+    function updateWebSearchUI() {
+      webSearchToggleBtn.setAttribute("aria-pressed", webSearchEnabled ? "true" : "false");
+      if (webSearchEnabled) {
+        webSearchToggleBtn.className = "flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400 font-label-meta text-xs font-bold transition-all cursor-pointer active:scale-95";
+      } else {
+        webSearchToggleBtn.className = "flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#27272A] hover:bg-[#323238] text-slate-300 border border-[#4B4B54] hover:border-slate-300/60 font-label-meta text-xs font-bold transition-all cursor-pointer active:scale-95";
+      }
+    }
+
+    updateWebSearchUI();
+    webSearchToggleBtn.addEventListener("click", () => {
+      webSearchEnabled = !webSearchEnabled;
+      localStorage.setItem("studyrag_web_search", String(webSearchEnabled));
+      updateWebSearchUI();
+    });
   }
 
   function toggleLeftPanel(collapse) {
@@ -665,7 +715,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     documents.forEach((doc) => {
       const item = document.createElement("div");
-      item.className = "file-item p-2.5 rounded-xl bg-[#18181C] hover:bg-[#222228] border border-[#38383E] flex items-center justify-between gap-2 transition-all shadow-xs hover:shadow-md group";
+      item.className = "file-item relative hover:z-20 p-2.5 rounded-xl bg-[#18181C] hover:bg-[#222228] border border-[#38383E] hover:border-[#52525E] flex items-center justify-between gap-2 shadow-xs cursor-pointer group";
 
       const sizeText = formatBytes(doc.file_size_bytes);
       const chunksText = `${doc.chunk_count || 0} chunks`;
@@ -726,6 +776,9 @@ document.addEventListener("DOMContentLoaded", () => {
           if (m !== dropdownMenu) m.classList.add("hidden");
         });
         dropdownMenu.classList.toggle("hidden");
+        if (!dropdownMenu.classList.contains("hidden")) {
+          item.style.transform = "";
+        }
       });
 
       renameBtn.addEventListener("click", async () => {
@@ -771,6 +824,16 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
 
+      item.addEventListener("click", (e) => {
+        if (e.target.closest(".doc-menu-container") || e.target.classList.contains("doc-checkbox")) return;
+        const cb = item.querySelector(".doc-checkbox");
+        if (cb) {
+          cb.checked = !cb.checked;
+          updateSourcesBadge();
+        }
+      });
+
+      attachDynamicFloatEffect(item);
       corpusList.appendChild(item);
     });
 
@@ -825,8 +888,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!query) return;
 
     const activeDocs = getActiveDocNames();
-    if (activeDocs.length === 0) {
-      alert("Please select at least one active document from the Sources panel.");
+    if (activeDocs.length === 0 && !webSearchEnabled) {
+      alert("Please select at least one active document from the Sources panel, or enable Web Search.");
       return;
     }
 
@@ -848,7 +911,8 @@ document.addEventListener("DOMContentLoaded", () => {
           query: query,
           active_docs: activeDocs,
           user_id: currentUserId,
-          history: chatHistory.slice(-8)
+          history: chatHistory.slice(-8),
+          web_search: webSearchEnabled
         })
       });
       const data = await res.json();
@@ -1028,7 +1092,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Assistant Message with sleek Minimalist Action Bar (Copy, Speaker, Like, Dislike, Regenerate)
   function appendAssistantMessage(data, userQuery = "", activeDocs = []) {
-    const { answer, citations, is_refusal, used_external_info } = data;
+    const { answer, citations, is_refusal, used_external_info, web_search_used, web_sources } = data;
     const formattedHtml = formatMarkdownResponse(answer);
 
     const wrapper = document.createElement("div");
@@ -1067,12 +1131,31 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     ` : '';
 
-    const externalBadge = (!is_refusal && used_external_info) ? `
+    const externalBadge = (!is_refusal && (used_external_info || web_search_used)) ? `
       <div class="mb-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-950/70 text-amber-200 text-xs font-semibold border border-amber-500/60">
-        <span class="material-symbols-outlined text-[15px] text-amber-300">public</span>
-        <span>External Information Used (Outside Uploaded Files)</span>
+        <span class="material-symbols-outlined text-[15px] text-amber-300">${web_search_used ? 'language' : 'public'}</span>
+        <span>${web_search_used ? 'Web Search & External Info Used (Outside Uploaded Files)' : 'External Information Used (Outside Uploaded Files)'}</span>
       </div>
     ` : '';
+
+    let webSourcesBlock = "";
+    if (!is_refusal && web_sources && web_sources.length > 0) {
+      const webChips = web_sources.map(ws => `
+        <a href="${escapeHtml(ws.uri)}" target="_blank" rel="noopener noreferrer"
+          class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#16161C] hover:bg-[#23232C] text-slate-100 border border-[#3E3E48] text-xs font-medium transition-colors"
+          title="${escapeHtml(ws.uri)}">
+          <span class="material-symbols-outlined text-[14px] text-emerald-400">language</span>
+          <span class="truncate max-w-[200px]">${escapeHtml(ws.title || ws.domain || "Web Source")}</span>
+          <span class="material-symbols-outlined text-[13px] text-slate-400">open_in_new</span>
+        </a>
+      `).join("");
+      webSourcesBlock = `
+        <div class="mt-3 pt-2.5 border-t border-[#38383E] flex flex-col gap-1.5">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-300">Web Sources (${web_sources.length})</span>
+          <div class="flex flex-wrap gap-1.5">${webChips}</div>
+        </div>
+      `;
+    }
 
     wrapper.innerHTML = `
       <div class="w-8 h-8 rounded-xl ${is_refusal ? 'bg-[#ef4444]' : 'bg-[#2563eb]'} text-white flex items-center justify-center shrink-0 mt-0.5 border border-[#38383E]">
@@ -1085,6 +1168,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="text-[#f1f5f9] space-y-2 leading-relaxed font-body-md text-body-md font-normal">
             ${formattedHtml}
           </div>
+          ${webSourcesBlock}
           ${citationsBlock}
         </div>
 
@@ -1328,7 +1412,8 @@ document.addEventListener("DOMContentLoaded", () => {
           body: JSON.stringify({
             query: userQuery,
             active_docs: activeDocs.length > 0 ? activeDocs : getActiveDocNames(),
-            history: chatHistory.slice(-8)
+            history: chatHistory.slice(-8),
+            web_search: webSearchEnabled
           })
         });
         const newData = await res.json();
@@ -1570,7 +1655,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/summary", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ doc_name: docName })
+        body: JSON.stringify({ doc_name: docName, web_search: webSearchEnabled })
       });
       const data = await res.json();
       removeElement(loadingId);
@@ -1596,7 +1681,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/study/mcq", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ doc_name: docName, count: 5 })
+        body: JSON.stringify({ doc_name: docName, count: 5, web_search: webSearchEnabled })
       });
       const data = await res.json();
       removeElement(loadingId);
@@ -1622,7 +1707,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/study/flashcards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ doc_name: docName, count: 6 })
+        body: JSON.stringify({ doc_name: docName, count: 6, web_search: webSearchEnabled })
       });
       const data = await res.json();
       removeElement(loadingId);
@@ -1648,7 +1733,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/study/cheatsheet", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ doc_name: docName })
+        body: JSON.stringify({ doc_name: docName, web_search: webSearchEnabled })
       });
       const data = await res.json();
       removeElement(loadingId);
@@ -1766,14 +1851,14 @@ document.addEventListener("DOMContentLoaded", () => {
               </span>
               <div class="flex items-center gap-1.5 shrink-0">
                 ${q.uses_external_info ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950/70 text-amber-200 border border-amber-500/60 shrink-0" title="Uses knowledge outside your uploaded file">External Info</span>` : ''}
-                ${q.topic ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 shrink-0">${escapeHtml(q.topic)}</span>` : ''}
+                ${q.topic ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/10 text-white border border-white/75 shrink-0">${escapeHtml(q.topic)}</span>` : ''}
               </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 options-container">
               ${optionsHtml}
             </div>
-            <div class="explanation-box hidden p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-900 dark:text-emerald-200 leading-relaxed">
-              <span class="font-bold">Explanation:</span> ${escapeHtml(q.explanation || "Correct answer from source material.")}
+            <div class="explanation-box hidden p-2.5 rounded-lg bg-[#27272F] border border-[#4B4B54] text-xs text-white leading-relaxed">
+              <span class="font-bold text-white">Explanation:</span> ${escapeHtml(q.explanation || "Correct answer from source material.")}
               ${q.uses_external_info ? `<span class="block mt-1 text-[11px] font-semibold text-amber-300">Note: This question/explanation uses external information outside your uploaded file.</span>` : ''}
             </div>
           </div>

@@ -29,7 +29,7 @@ def get_genai_client():
 
 
 class DocumentSummarizer:
-    def summarize_document(self, doc_name: str) -> Dict[str, Any]:
+    def summarize_document(self, doc_name: str, web_search: bool = False) -> Dict[str, Any]:
         """
         Generate a structured study summary for an uploaded document/chapter
         using Gemini Flash's long context window.
@@ -41,12 +41,20 @@ class DocumentSummarizer:
                 "error": f"No content found for document '{doc_name}'. Please ensure it is uploaded."
             }
 
+        strict_rule = (
+            "EXTERNAL INFO RULE: If ANY fact, definition, expansion, or explanation uses knowledge outside CONTENT, set \"used_external_info\": true and explain what was added in \"external_info_notice\"."
+            if web_search else
+            "STRICT FILE-ONLY RULE (Web Search is OFF): Use ONLY facts, topics, definitions, and formulas literally present in CONTENT. Do NOT add any external information, outside definitions, or explanations not written in CONTENT. Always set \"used_external_info\": false and \"external_info_notice\": \"\"."
+        )
+
         prompt = f"""
 You are an expert academic tutor summarizing study notes, syllabi, and lecture slides for a student.
 
 DOCUMENT: {doc_name}
 CONTENT:
 {full_text}
+
+{strict_rule}
 
 Generate a thorough, well-structured study summary in valid JSON format with the following fields:
 1. "title": A clear title summarizing the chapter or document (e.g., "Document Summary: Computer Networks Syllabus").
@@ -98,14 +106,18 @@ OUTPUT ONLY THE JSON OBJECT. No preamble, no backticks, just raw valid JSON.
 
                 data = json.loads(response_text)
                 data["doc_name"] = doc_name
-                used_ext = bool(data.get("used_external_info", False))
-                notice = (data.get("external_info_notice") or "").strip()
-                if notice and not used_ext:
-                    used_ext = True
-                if used_ext and not notice:
-                    notice = "External information from outside your uploaded file was used to explain or expand topics not fully detailed in the document."
-                data["used_external_info"] = used_ext
-                data["external_info_notice"] = notice
+                if not web_search:
+                    data["used_external_info"] = False
+                    data["external_info_notice"] = ""
+                else:
+                    used_ext = bool(data.get("used_external_info", False))
+                    notice = (data.get("external_info_notice") or "").strip()
+                    if notice and not used_ext:
+                        used_ext = True
+                    if used_ext and not notice:
+                        notice = "External information from outside your uploaded file was used to explain or expand topics not fully detailed in the document."
+                    data["used_external_info"] = used_ext
+                    data["external_info_notice"] = notice
                 return data
             except Exception as e:
                 last_error = e

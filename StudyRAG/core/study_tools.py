@@ -46,9 +46,20 @@ def _clean_json_response(raw_text: str) -> str:
 def _normalize_external_info(
     result: Dict[str, Any],
     item_lists: List[List[Dict[str, Any]]],
-    default_notice: str
+    default_notice: str,
+    web_search: bool = True
 ) -> Dict[str, Any]:
     """Ensure top-level and item-level external info flags and notice are consistent."""
+    if not web_search:
+        for items in item_lists:
+            if isinstance(items, list):
+                for item in items:
+                    if isinstance(item, dict):
+                        item["uses_external_info"] = False
+        result["used_external_info"] = False
+        result["external_info_notice"] = ""
+        return result
+
     used_ext = bool(result.get("used_external_info", False))
     for items in item_lists:
         if not isinstance(items, list):
@@ -99,7 +110,7 @@ class StudyToolsService:
             logger.error(f"Error calling Gemini JSON: {e}")
             raise e
 
-    def generate_mcqs(self, doc_name: str, count: int = 5) -> Dict[str, Any]:
+    def generate_mcqs(self, doc_name: str, count: int = 5, web_search: bool = False) -> Dict[str, Any]:
         """Generate high-yield multiple choice questions strictly based on the document."""
         full_text = vector_store.get_document_full_text(doc_name)
         if not full_text:
@@ -107,6 +118,21 @@ class StudyToolsService:
 
         # Truncate text if very large to fit comfortably
         context = full_text[:40000]
+
+        rules_block = (
+            """RULES:
+- Prioritize facts written directly in CONTENT.
+- If ANY question, option, or explanation uses external knowledge NOT explicitly written in CONTENT (for example, expanding a syllabus topic or defining an acronym not expanded in the file), you MUST set "uses_external_info": true on that question, set top-level "used_external_info": true, and write a clear "external_info_notice" explaining which questions/topics used external information from outside the uploaded file.
+- If 100% of all questions, options, and explanations come strictly from CONTENT, set "used_external_info": false and "external_info_notice": "".
+- Keep definitions and explanations simple and easy to understand.
+- Generate questions that test conceptual understanding, definitions, algorithms, or formulas mentioned in the document."""
+            if web_search else
+            """RULES (STRICT FILE-ONLY MODE - Web Search is OFF):
+- Every question, option, and explanation MUST come strictly and ONLY from facts explicitly written in CONTENT.
+- Do NOT use any external knowledge, outside facts, or unstated definitions/expansions beyond what is literally written in CONTENT.
+- Always set "used_external_info": false, "external_info_notice": "", and "uses_external_info": false on every question.
+- Keep definitions and explanations simple and easy to understand."""
+        )
 
         prompt = f"""
 You are an expert exam designer and academic tutor.
@@ -141,12 +167,7 @@ Respond in strictly valid JSON with the following structure:
   ]
 }}
 
-RULES:
-- Prioritize facts written directly in CONTENT.
-- If ANY question, option, or explanation uses external knowledge NOT explicitly written in CONTENT (for example, expanding a syllabus topic or defining an acronym not expanded in the file), you MUST set "uses_external_info": true on that question, set top-level "used_external_info": true, and write a clear "external_info_notice" explaining which questions/topics used external information from outside the uploaded file.
-- If 100% of all questions, options, and explanations come strictly from CONTENT, set "used_external_info": false and "external_info_notice": "".
-- Keep definitions and explanations simple and easy to understand.
-- Generate questions that test conceptual understanding, definitions, algorithms, or formulas mentioned in the document.
+{rules_block}
 OUTPUT ONLY RAW JSON.
 """
         try:
@@ -155,7 +176,8 @@ OUTPUT ONLY RAW JSON.
             return _normalize_external_info(
                 result,
                 [result.get("questions", [])],
-                "Some questions, options, or explanations use external information from outside your uploaded file."
+                "Some questions, options, or explanations use external information from outside your uploaded file.",
+                web_search=web_search
             )
         except Exception as e:
             logger.exception("Failed to generate MCQs")
@@ -164,13 +186,27 @@ OUTPUT ONLY RAW JSON.
                 "error": f"Failed to generate MCQs: {str(e)}"
             }
 
-    def generate_flashcards(self, doc_name: str, count: int = 6) -> Dict[str, Any]:
+    def generate_flashcards(self, doc_name: str, count: int = 6, web_search: bool = False) -> Dict[str, Any]:
         """Generate active recall flashcards based on the document."""
         full_text = vector_store.get_document_full_text(doc_name)
         if not full_text:
             return {"doc_name": doc_name, "error": f"No content found for '{doc_name}'."}
 
         context = full_text[:40000]
+
+        rules_block = (
+            """RULES:
+- Keep definitions short and simple to understand. Write any formulas in a simple, clear way.
+- Prioritize facts written directly in CONTENT.
+- If ANY card prompt or answer uses external knowledge NOT explicitly written in CONTENT (for example, defining/expanding a syllabus topic), you MUST set "uses_external_info": true on that card, set top-level "used_external_info": true, and write a clear "external_info_notice" explaining which cards/topics used external information from outside the uploaded file.
+- If 100% of all flashcards come strictly from CONTENT, set "used_external_info": false and "external_info_notice": ""."""
+            if web_search else
+            """RULES (STRICT FILE-ONLY MODE - Web Search is OFF):
+- Every flashcard prompt and answer MUST come strictly and ONLY from facts, definitions, and formulas explicitly written in CONTENT.
+- Do NOT add any external knowledge, outside definitions, or explanations not written in CONTENT.
+- Always set "used_external_info": false, "external_info_notice": "", and "uses_external_info": false on every card.
+- Keep definitions short and simple to understand, and write any formulas from CONTENT in a simple, clear way."""
+        )
 
         prompt = f"""
 You are an expert tutor creating active recall flashcards for students.
@@ -197,11 +233,7 @@ Respond in strictly valid JSON with the following structure:
   ]
 }}
 
-RULES:
-- Keep definitions short and simple to understand. Write any formulas in a simple, clear way.
-- Prioritize facts written directly in CONTENT.
-- If ANY card prompt or answer uses external knowledge NOT explicitly written in CONTENT (for example, defining/expanding a syllabus topic), you MUST set "uses_external_info": true on that card, set top-level "used_external_info": true, and write a clear "external_info_notice" explaining which cards/topics used external information from outside the uploaded file.
-- If 100% of all flashcards come strictly from CONTENT, set "used_external_info": false and "external_info_notice": "".
+{rules_block}
 OUTPUT ONLY RAW JSON.
 """
         try:
@@ -210,7 +242,8 @@ OUTPUT ONLY RAW JSON.
             return _normalize_external_info(
                 result,
                 [result.get("flashcards", [])],
-                "Some flashcards include external information from outside your uploaded file to explain or define topics."
+                "Some flashcards include external information from outside your uploaded file to explain or define topics.",
+                web_search=web_search
             )
         except Exception as e:
             logger.exception("Failed to generate Flashcards")
@@ -219,13 +252,26 @@ OUTPUT ONLY RAW JSON.
                 "error": f"Failed to generate Flashcards: {str(e)}"
             }
 
-    def generate_cheatsheet(self, doc_name: str) -> Dict[str, Any]:
+    def generate_cheatsheet(self, doc_name: str, web_search: bool = False) -> Dict[str, Any]:
         """Generate a high-yield exam cheat sheet with key formulas, definitions, and pitfalls."""
         full_text = vector_store.get_document_full_text(doc_name)
         if not full_text:
             return {"doc_name": doc_name, "error": f"No content found for '{doc_name}'."}
 
         context = full_text[:60000]
+
+        rules_block = (
+            """MANDATORY RULES:
+1. SIMPLE & SHORT DEFINITIONS: Every definition in "core_definitions" MUST be short (1 crisp sentence, ~10-20 words) and written in simple, everyday language that is easy to understand without dense jargon.
+2. SIMPLE & COMPLETE FORMULAS (COVER ALL FORMULAS): In "key_formulas_or_rules", make sure ALL formulas, equations, scoring functions, recurrences, probabilities, complexity bounds, and mathematical/algorithmic rules from the document AND for every topic/algorithm named in the document are completely covered — do NOT skip any formula! Write every formula in a simple, clean, easy-to-read format with a short plain-English explanation of what the variables mean.
+3. EXTERNAL INFORMATION DISCLOSURE: Prioritize facts explicitly in CONTENT. Whenever ANY definition, formula, rule, pitfall, or tip uses external knowledge NOT literally written inside CONTENT (for example, providing a simple definition or formula for a topic/algorithm listed in a syllabus), you MUST set "uses_external_info": true on that item, set top-level "used_external_info": true, and write a clear "external_info_notice" stating that external information outside the uploaded file was used and summarizing what it supplied. If 100% of the cheat sheet comes strictly from CONTENT, set "used_external_info": false and "external_info_notice": ""."""
+            if web_search else
+            """MANDATORY RULES (STRICT FILE-ONLY MODE - Web Search is OFF):
+1. STRICTLY FROM FILE ONLY: Every overview sentence, definition, formula/rule, pitfall, and quick tip MUST come strictly and ONLY from information literally written in CONTENT. Do NOT add any external information, outside definitions, or external formulas not written in CONTENT.
+2. SIMPLE & SHORT DEFINITIONS: Keep definitions in "core_definitions" short, simple, and based strictly on CONTENT.
+3. SIMPLE & COMPLETE FORMULAS FROM CONTENT: Include ALL formulas, equations, or rules that appear in CONTENT written in a simple, clear format. If CONTENT contains no explicit formulas or equations, return [] for "key_formulas_or_rules" instead of pulling formulas from outside the file.
+4. ALWAYS set "used_external_info": false, "external_info_notice": "", and "uses_external_info": false on all items."""
+        )
 
         prompt = f"""
 You are an expert academic tutor creating a High-Yield Revision Cheat Sheet for students studying for an exam.
@@ -256,10 +302,7 @@ Respond in strictly valid JSON with the following structure:
   ]
 }}
 
-MANDATORY RULES:
-1. SIMPLE & SHORT DEFINITIONS: Every definition in "core_definitions" MUST be short (1 crisp sentence, ~10-20 words) and written in simple, everyday language that is easy to understand without dense jargon.
-2. SIMPLE & COMPLETE FORMULAS (COVER ALL FORMULAS): In "key_formulas_or_rules", make sure ALL formulas, equations, scoring functions, recurrences, probabilities, complexity bounds, and mathematical/algorithmic rules from the document AND for every topic/algorithm named in the document are completely covered — do NOT skip any formula! Write every formula in a simple, clean, easy-to-read format with a short plain-English explanation of what the variables mean.
-3. EXTERNAL INFORMATION DISCLOSURE: Prioritize facts explicitly in CONTENT. Whenever ANY definition, formula, rule, pitfall, or tip uses external knowledge NOT literally written inside CONTENT (for example, providing a simple definition or formula for a topic/algorithm listed in a syllabus), you MUST set "uses_external_info": true on that item, set top-level "used_external_info": true, and write a clear "external_info_notice" stating that external information outside the uploaded file was used and summarizing what it supplied. If 100% of the cheat sheet comes strictly from CONTENT, set "used_external_info": false and "external_info_notice": "".
+{rules_block}
 
 OUTPUT ONLY RAW JSON.
 """
@@ -269,7 +312,8 @@ OUTPUT ONLY RAW JSON.
             return _normalize_external_info(
                 result,
                 [result.get("core_definitions", []), result.get("key_formulas_or_rules", [])],
-                "Some definitions or formulas use external information from outside your uploaded file."
+                "Some definitions or formulas use external information from outside your uploaded file.",
+                web_search=web_search
             )
         except Exception as e:
             logger.exception("Failed to generate Cheatsheet")
