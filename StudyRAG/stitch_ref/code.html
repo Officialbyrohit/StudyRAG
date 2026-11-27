@@ -1,0 +1,380 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>StudyRAG - Academic Study Assistant</title>
+<!-- Tailwind CSS v3 with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration for Custom Dark Palette -->
+<script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              400: '#60a5fa',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+              950: '#172554',
+            },
+            surface: {
+              darkest: '#111111',
+              base: '#0A0A0A',
+              sidebar: '#161618',
+              card: '#1E1E22',
+              input: '#1E1E22',
+              border: '#2A2A2E',
+              borderLight: '#38383E'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<!-- BEGIN: Custom Styles -->
+<style data-purpose="custom-scrollbars">
+    /* Custom scrollbar for dark mode sidebar and main contents */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0A0A0A;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2A2A2E;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3A3A40;
+    }
+  </style>
+<!-- END: Custom Styles -->
+</head>
+<body class="bg-surface-base text-slate-100 font-sans h-screen w-screen overflow-hidden flex flex-col antialiased select-none">
+<!-- BEGIN: MainHeader -->
+<header class="h-14 bg-surface-sidebar/95 border-b border-surface-border flex items-center justify-between px-4 z-20 shrink-0">
+<!-- Brand Logo Section -->
+<div class="flex items-center space-x-2.5">
+<div class="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white shadow-md shadow-brand-600/30">
+<!-- Graduation Cap Icon -->
+<svg class="w-5 h-5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.73l5 2.73 5-2.73v3.73z"></path>
+</svg>
+</div>
+<span class="text-lg font-semibold tracking-tight text-white">Study<span class="text-brand-400">RAG</span></span>
+</div>
+<!-- Right Header Actions -->
+<div class="flex items-center space-x-3">
+<!-- Upload Files CTA Button -->
+<button class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold tracking-wide transition shadow-sm shadow-blue-500/20 active:scale-95" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>Upload Files</span>
+</button>
+<!-- Theme Switcher / Dark Mode Icon -->
+<button aria-label="Toggle Theme" class="p-1.5 text-slate-400 hover:text-slate-200 transition rounded-lg hover:bg-neutral-800" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- User Avatar Profile -->
+<div class="w-8 h-8 rounded-full bg-brand-600/80 border border-brand-400/40 text-white flex items-center justify-center font-medium text-xs shadow-inner cursor-pointer hover:ring-2 hover:ring-brand-500/40 transition">
+<svg class="w-4 h-4 fill-current text-white/90" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
+</svg>
+</div>
+</div>
+</header>
+<!-- END: MainHeader -->
+<!-- BEGIN: ApplicationBody -->
+<div class="flex-1 flex overflow-hidden">
+<!-- BEGIN: LeftSidebar -->
+<aside class="w-72 bg-black border-r border-surface-border flex flex-col justify-between shrink-0">
+<!-- Top Scrollable Sources Container -->
+<div class="flex-1 overflow-y-auto p-3.5 space-y-4">
+<!-- Sidebar Sources Header -->
+<div class="flex items-center justify-between pb-1">
+<div class="flex items-center space-x-2">
+<!-- Folder Icon -->
+<svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<h2 class="text-sm font-semibold text-white tracking-wide">Sources</h2>
+<!-- Active Count Badge -->
+<span class="px-2 py-0.5 rounded-full text-[11px] font-medium bg-brand-950/80 text-brand-400 border border-brand-700/60 shadow-xs">
+              2 / 2 Active
+            </span>
+</div>
+<div class="flex items-center space-x-1">
+<!-- Add Source Button -->
+<button aria-label="Add Source" class="p-1 text-slate-400 hover:text-white rounded hover:bg-neutral-800 transition" type="button">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Collapse Sidebar Button -->
+<button aria-label="Collapse Sidebar" class="p-1 text-slate-400 hover:text-white rounded hover:bg-neutral-800 transition" type="button">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+</div>
+<!-- Included Corpus Section -->
+<div>
+<div class="flex items-center justify-between text-xs mb-2.5 px-0.5">
+<button class="flex items-center space-x-1.5 text-slate-400 hover:text-slate-200 transition font-medium tracking-wider text-[10px] uppercase" type="button">
+<svg class="w-3.5 h-3 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>INCLUDED CORPUS (2)</span>
+</button>
+<button class="text-[11px] font-medium text-brand-400 hover:text-brand-300 transition" type="button">
+              Select all
+            </button>
+</div>
+<!-- Document List -->
+<div class="space-y-2.5">
+<!-- Document Card 1: DSA Syllabus.PDF -->
+<div class="bg-neutral-900 hover:bg-surface-card border border-neutral-800 rounded-xl p-2.5 transition duration-150 group" data-purpose="document-card">
+<div class="flex items-start space-x-2">
+<!-- Checkbox -->
+<input checked="" class="mt-0.5 rounded bg-surface-base border-neutral-600 text-brand-600 focus:ring-brand-500/20 focus:ring-offset-0 cursor-pointer h-3.5 w-3.5" type="checkbox">
+<div class="flex-1 min-w-0">
+<p class="text-xs font-medium text-slate-200 truncate">DSA Syllabus.PDF</p>
+<!-- Metadata Info -->
+<div class="flex items-center space-x-2 mt-2">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-brand-950/70 border border-brand-800/80 text-brand-400">
+                      191.1 KB
+                    </span>
+<span class="text-[11px] text-slate-400">8 chunks</span>
+<span class="text-[11px] text-slate-400">2 pgs</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Document Card 2: AI syllabus.pdf (Active with action buttons) -->
+<div class="relative bg-neutral-900 border border-brand-500/40 rounded-xl p-2.5 shadow-sm transition duration-150" data-purpose="document-card">
+<div class="flex items-start space-x-2">
+<!-- Checkbox -->
+<input checked="" class="mt-0.5 rounded bg-surface-base border-neutral-600 text-brand-600 focus:ring-brand-500/20 focus:ring-offset-0 cursor-pointer h-3.5 w-3.5" type="checkbox">
+<div class="flex-1 min-w-0">
+<p class="text-xs font-medium text-slate-100 truncate">AI syllabus.pdf</p>
+<!-- Metadata & Document Action Bar -->
+<div class="flex items-center justify-between mt-2">
+<div class="flex items-center space-x-2">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-brand-950/70 border border-brand-800/80 text-brand-400">
+                        196.5 KB
+                      </span>
+<span class="text-[11px] text-slate-400">17 chunks</span>
+<span class="text-[11px] text-slate-400">3 pgs</span>
+</div>
+<!-- Actions (External, Download, Rename, Delete) -->
+<div class="flex items-center space-x-1.5 text-slate-400">
+<button aria-label="Open document" class="hover:text-slate-200 transition" type="button">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<button aria-label="Download document" class="hover:text-slate-200 transition" type="button">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Rename button with tooltip simulation -->
+<div class="relative group/tooltip">
+<button aria-label="Rename document" class="text-slate-300 hover:text-white transition" type="button">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Tooltip -->
+<span class="absolute right-0 top-full mt-1.5 hidden group-hover/tooltip:block bg-black/90 text-slate-200 text-[10px] px-2 py-0.5 rounded shadow-lg border border-neutral-700 whitespace-nowrap z-30">
+                          Rename Document
+                        </span>
+</div>
+<button aria-label="Delete document" class="hover:text-rose-400 transition" type="button">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Sidebar: AI Study Tools Grid -->
+<div class="p-3 border-t border-surface-border bg-neutral-900/60">
+<div class="flex items-center space-x-1.5 mb-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest px-0.5">
+<svg class="w-3.5 h-3.5 text-brand-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" fill-rule="evenodd"></path>
+</svg>
+<span>AI Study Tools</span>
+</div>
+<div class="grid grid-cols-2 gap-2 text-xs">
+<!-- Summary Tool -->
+<button class="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-blue-500/30 text-blue-300 transition hover:border-blue-400 text-left" type="button">
+<svg class="w-3.5 h-3.5 text-blue-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="truncate font-medium text-[11px]">Summary</span>
+</button>
+<!-- MCQ Quiz Tool -->
+<button class="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-emerald-500/30 text-emerald-300 transition hover:border-emerald-400 text-left" type="button">
+<svg class="w-3.5 h-3.5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="truncate font-medium text-[11px]">MCQ Quiz</span>
+</button>
+<!-- Flashcards Tool -->
+<button class="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-amber-500/30 text-amber-300 transition hover:border-amber-400 text-left" type="button">
+<svg class="w-3.5 h-3.5 text-amber-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="truncate font-medium text-[11px]">Flashcards</span>
+</button>
+<!-- Cheat Sheet Tool -->
+<button class="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-purple-500/30 text-purple-300 transition hover:border-purple-400 text-left" type="button">
+<svg class="w-3.5 h-3.5 text-purple-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M4 6h16M4 10h16M4 14h16M4 18h16" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="truncate font-medium text-[11px]">Cheat Sheet</span>
+</button>
+</div>
+</div>
+</div></aside>
+<!-- END: LeftSidebar -->
+<!-- BEGIN: MainAssistantArea -->
+<main class="flex-1 flex flex-col justify-between overflow-hidden relative bg-surface-sidebar">
+<!-- Chat Conversation & Welcome Area -->
+<div class="flex-1 overflow-y-auto px-6 py-8 flex flex-col items-center justify-start space-y-6">
+<!-- Welcome Card Message Box -->
+<div class="w-full max-w-3xl flex items-start space-x-3.5">
+<!-- AI Assistant Sparkle Badge Icon -->
+<div class="w-9 h-9 rounded-xl bg-brand-600/90 text-white flex items-center justify-center shrink-0 shadow-lg shadow-brand-600/30 border border-brand-400/30">
+<svg class="w-5 h-5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z"></path>
+</svg>
+</div>
+<!-- Welcome Message Container -->
+<div class="flex-1 bg-surface-card border border-surface-borderLight/40 rounded-2xl p-6 shadow-xl space-y-3.5">
+<h1 class="text-base font-bold text-brand-400 tracking-tight">
+              Welcome to StudyRAG!
+            </h1>
+<p class="text-xs text-slate-300 leading-relaxed font-normal">
+              I am your strictly grounded academic study assistant. Here is how I protect your learning:
+            </p>
+<!-- Grounding Rules List -->
+<ul class="space-y-2 text-xs text-slate-300 leading-relaxed">
+<li class="flex items-start">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-brand-400 mt-1.5 mr-2 shrink-0"></span>
+<span><strong class="text-slate-100 font-semibold">100% Grounded Answers:</strong> I answer only from your uploaded documents.</span>
+</li>
+<li class="flex items-start">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-brand-400 mt-1.5 mr-2 shrink-0"></span>
+<span><strong class="text-slate-100 font-semibold">Exact Citations:</strong> Every answer links to the exact page and passage in your notes.</span>
+</li>
+<li class="flex items-start">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-brand-400 mt-1.5 mr-2 shrink-0"></span>
+<span><strong class="text-slate-100 font-semibold">Zero Hallucination ("I Don't Know"):</strong> If the answer isn't in your notes, I will explicitly tell you instead of guessing.</span>
+</li>
+<li class="flex items-start">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-brand-400 mt-1.5 mr-2 shrink-0"></span>
+<span><strong class="text-slate-100 font-semibold">Document Summaries:</strong> Click "Summarize this document" to get structured chapter summaries.</span>
+</li>
+<li class="flex items-start">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-brand-400 mt-1.5 mr-2 shrink-0"></span>
+<span><strong class="text-slate-100 font-semibold">Continuous Model Training:</strong> Click "Helpful", "Needs Work", or "Feedback / Train" on any response to train me to adapt to your study style.</span>
+</li>
+</ul>
+<!-- Prompt call to action note -->
+<p class="pt-2 text-[11px] text-slate-400">
+              To get started, click the <span class="font-bold text-slate-300">+</span> button in the search bar or <span class="font-medium text-slate-300">"Upload Files"</span> above!
+            </p>
+</div>
+</div>
+<!-- Temporary Action Feedback / System Toast -->
+<div class="inline-flex items-center px-3.5 py-1.5 rounded-lg bg-surface-card/90 text-slate-300 border border-surface-border shadow-lg text-xs space-x-1" data-purpose="toast-notification">
+<span>Deleted</span>
+<span class="font-semibold text-slate-100">test 2.pdf.</span>
+</div>
+</div>
+<!-- BEGIN: InputAndQuickTools -->
+<footer class="w-full max-w-4xl mx-auto px-6 pb-6 pt-2 shrink-0">
+<!-- Prompt Box Container -->
+<div class="bg-surface-input border border-surface-border rounded-2xl shadow-2xl p-2.5 focus-within:border-brand-500 transition duration-150">
+<!-- Top Quick Tools Inline Bar -->
+<div class="flex items-center space-x-2 px-2 pb-2 mb-1.5 border-b border-surface-border text-xs">
+<span class="text-[11px] text-slate-400 font-medium mr-1">Quick Tools:</span>
+<!-- Quick Pill: Summary -->
+<button class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-blue-950/40 text-blue-300 border border-blue-800/60 hover:border-blue-500 transition text-[11px]" type="button">
+<svg class="w-3 h-3 text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>Summary</span>
+</button>
+<!-- Quick Pill: 5 MCQs Quiz -->
+<button class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-950/40 text-emerald-300 border border-emerald-800/60 hover:border-emerald-500 transition text-[11px]" type="button">
+<svg class="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>5 MCQs Quiz</span>
+</button>
+<!-- Quick Pill: Flashcards -->
+<button class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-amber-950/40 text-amber-300 border border-amber-800/60 hover:border-amber-500 transition text-[11px]" type="button">
+<svg class="w-3 h-3 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>Flashcards</span>
+</button>
+<!-- Quick Pill: Cheat Sheet -->
+<button class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-purple-950/40 text-purple-300 border border-purple-800/60 hover:border-purple-500 transition text-[11px]" type="button">
+<svg class="w-3 h-3 text-purple-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M4 6h16M4 10h16M4 14h16M4 18h16" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>Cheat Sheet</span>
+</button>
+</div>
+<!-- Bottom Main Text Input Row -->
+<div class="flex items-center space-x-2 px-1">
+<!-- Add Attached Content Plus Button -->
+<button aria-label="Add Attachment" class="p-2 rounded-xl bg-neutral-800 text-slate-300 hover:text-white hover:bg-neutral-700 transition" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Main Input Field -->
+<input class="flex-1 bg-transparent border-none text-slate-100 placeholder-slate-400 text-sm focus:ring-0 px-2 outline-none" placeholder="Ask a question about your uploaded notes..." type="text">
+<!-- Voice Dictation / Mic Button -->
+<button aria-label="Voice Input" class="p-2 text-slate-400 hover:text-slate-200 transition" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Send Query Action Button -->
+<button aria-label="Send Query" class="w-8 h-8 rounded-full bg-brand-600 hover:bg-brand-500 text-white flex items-center justify-center transition shadow-md shadow-brand-600/30 active:scale-95 shrink-0" type="button">
+<svg class="w-4 h-4 rotate-45 -translate-x-0.5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+<path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
+</svg>
+</button>
+</div>
+</div>
+</footer>
+<!-- END: InputAndQuickTools -->
+</main>
+<!-- END: MainAssistantArea -->
+</div>
+<!-- END: ApplicationBody -->
+</body></html>

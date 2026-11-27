@@ -1,0 +1,586 @@
+{
+  "feedbacks": [
+    {
+      "id": "fb_1795301556721",
+      "query": "what is unit 1 of ai",
+      "answer": "Unit I of Artificial Intelligence covers...",
+      "rating": "like",
+      "opinion": "keep it shorter and use more bullet points",
+      "active_docs": [
+        "AI syllabus.pdf"
+      ],
+      "timestamp": "2026-11-22T04:22:36.721241"
+    },
+    {
+      "id": "fb_1795321741551",
+      "query": "hii",
+      "answer": "\u2022 **Greeting Response**: Hello! How can I help you study your documents today [1]?",
+      "rating": "like",
+      "opinion": "",
+      "active_docs": [
+        "CS210_Lecture4_Sorting.pdf",
+        "AI syllabus.pdf",
+        "test 2.pdf"
+      ],
+      "timestamp": "2026-11-22T09:59:01.551788"
+    },
+    {
+      "id": "fb_1795321753792",
+      "query": "hii",
+      "answer": "\u2022 **Greeting Response**: Hello! How can I help you study your documents today [1]?",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [
+        "CS210_Lecture4_Sorting.pdf",
+        "AI syllabus.pdf",
+        "test 2.pdf"
+      ],
+      "timestamp": "2026-11-22T09:59:13.792702"
+    },
+    {
+      "id": "fb_1795321761562",
+      "query": "hii",
+      "answer": "\u2022 **Greeting Response**: Hello! How can I help you study your documents today [1]?",
+      "rating": "dislike",
+      "opinion": "Simpler language",
+      "active_docs": [
+        "CS210_Lecture4_Sorting.pdf",
+        "AI syllabus.pdf",
+        "test 2.pdf"
+      ],
+      "timestamp": "2026-11-22T09:59:21.562185"
+    },
+    {
+      "id": "fb_1795429127189",
+      "query": "hii",
+      "answer": "Hello! Based on your documents, here is a quick overview of what is mentioned:\n\n\u2022 **Test Information**: The documents contain test notes stating that 2+2=5, A+B=o, and a preference for C++ [1], [2]. Student details include a name of tyagi, roll number 09, and state of keral [2].\n\u2022 **Machine Learning Study**: Explore AI evolution by implementing supervised and unsupervised learning examples with public datasets and comparing them with classical AI [4].\n\u2022 **AI Assistant Development**: Build a domain-specific assistant (like a Student or Healthcare Assistant) using an open-source **Large Language",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [
+        "CS210_Lecture4_Sorting.pdf",
+        "AI syllabus.pdf",
+        "test 2.pdf"
+      ],
+      "timestamp": "2026-11-23T15:48:47.189657"
+    },
+    {
+      "id": "fb_1795498709459",
+      "query": "hii",
+      "answer": "Hello! I am StudyRAG, your academic study assistant. How can I help you with your studies based on your uploaded documents?",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [
+        "frmCourseSyllabusIPDownload(1).PDF",
+        "AI syllabus.pdf",
+        "test 2.pdf"
+      ],
+      "timestamp": "2026-11-24T11:08:29.459385"
+    },
+    {
+      "id": "fb_1795498775340",
+      "query": "hii",
+      "answer": "Hello! I am StudyRAG, your academic study assistant. How can I help you with your studies based on your uploaded documents?",
+      "rating": "dislike",
+      "opinion": "when no document data or information used in response then dont use citation , hide citation if greeting, just simple coversations",
+      "active_docs": [
+        "frmCourseSyllabusIPDownload(1).PDF",
+        "AI syllabus.pdf",
+        "test 2.pdf"
+      ],
+      "timestamp": "2026-11-24T11:09:35.340513"
+    },
+    {
+      "id": "fb_1795523328872",
+      "query": "syllabus of ai",
+      "answer": "**AI Syllabus Overview**\n\n\u2022 **Foundations and Problem Solving**: Covers the history, characteristics, types, lifecycle, and real-world applications of **Artificial Intelligence** (AI), alongside problem formulation, state-space representation, and search techniques [4, 5].\n\u2022 **Knowledge and Ethics**: Focuses on knowledge representation, reasoning techniques, intelligent agents, ethical and societal implications, privacy, security, and **Responsible AI** principles [1, 4].\n\u2022 **Advanced Paradigms and GenAI**: Explains the evolution of Machine Learning, Deep Learning, and applies prompt engineeri",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [
+        "DSA Syllabus.PDF",
+        "AI syllabus.pdf"
+      ],
+      "timestamp": "2026-11-24T17:58:48.872784"
+    },
+    {
+      "id": "fb_1795523365819",
+      "query": "syllabus of ai",
+      "answer": "**AI Syllabus Overview**\n\n\u2022 **Foundations and Problem Solving**: Covers the history, characteristics, types, lifecycle, and real-world applications of **Artificial Intelligence** (AI), alongside problem formulation, state-space representation, and search techniques [4, 5].\n\u2022 **Knowledge and Ethics**: Focuses on knowledge representation, reasoning techniques, intelligent agents, ethical and societal implications, privacy, security, and **Responsible AI** principles [1, 4].\n\u2022 **Advanced Paradigms and GenAI**: Explains the evolution of Machine Learning, Deep Learning, and applies prompt engineeri",
+      "rating": "dislike",
+      "opinion": "here use unit 1,2,3,4.. like that instead of bullet points",
+      "active_docs": [
+        "DSA Syllabus.PDF",
+        "AI syllabus.pdf"
+      ],
+      "timestamp": "2026-11-24T17:59:25.819324"
+    },
+    {
+      "id": "fb_1795523411333",
+      "query": "syllabus of ai",
+      "answer": "Here is the syllabus and course details for Artificial Intelligence:\n\n**Unit I**\n\u2022 **Foundations of AI**: Covers history, evolution, characteristics, types, lifecycle, and applications in healthcare, agriculture, finance, education, manufacturing, robotics, and smart cities [4], [5].\n\u2022 **AI Problem Solving**: Covers problem formulation, state-space representation, search and solution spaces, and performance measures [5].\n\n**Unit VI**\n\u2022 **Evolution and Future Paradigms**: Explains Machine Learning, Deep Learning, modern AI paradigms, the AI development ecosystem, emerging technologies, and futu",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [
+        "DSA Syllabus.PDF",
+        "AI syllabus.pdf"
+      ],
+      "timestamp": "2026-11-24T18:00:11.333093"
+    },
+    {
+      "id": "fb_1795523427166",
+      "query": "syllabus of ai",
+      "answer": "Here is the syllabus and course details for Artificial Intelligence:\n\n**Unit I**\n\u2022 **Foundations of AI**: Covers history, evolution, characteristics, types, lifecycle, and applications in healthcare, agriculture, finance, education, manufacturing, robotics, and smart cities [4], [5].\n\u2022 **AI Problem Solving**: Covers problem formulation, state-space representation, search and solution spaces, and performance measures [5].\n\n**Unit VI**\n\u2022 **Evolution and Future Paradigms**: Explains Machine Learning, Deep Learning, modern AI paradigms, the AI development ecosystem, emerging technologies, and futu",
+      "rating": "dislike",
+      "opinion": "in a structured formate",
+      "active_docs": [
+        "DSA Syllabus.PDF",
+        "AI syllabus.pdf"
+      ],
+      "timestamp": "2026-11-24T18:00:27.166409"
+    },
+    {
+      "id": "fb_1795523460789",
+      "query": "syllabus of ai",
+      "answer": "Hello! Here is the AI course syllabus based on your documents:\n\nUnit I\n\u2022 **Foundations of Artificial Intelligence**: Covers history, evolution, characteristics, types of AI, differences between AI, Machine Learning, Deep Learning, and Data Science, intelligent systems, the AI lifecycle, and applications in various fields [4, 5].\n\u2022 **AI Problem Solving**: Covers problem formulation, state-space representation, problem characteristics, search space, solution space, performance measures, and problem-solving approaches [5].\n\nUnit VI\n\u2022 **Evolution and Responsible AI**: Covers the evolution of Machi",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [
+        "DSA Syllabus.PDF",
+        "AI syllabus.pdf"
+      ],
+      "timestamp": "2026-11-24T18:01:00.789137"
+    },
+    {
+      "id": "fb_1795523474999",
+      "query": "syllabus of ai",
+      "answer": "Hello! Here is the AI course syllabus based on your documents:\n\nUnit I\n\u2022 **Foundations of Artificial Intelligence**: Covers history, evolution, characteristics, types of AI, differences between AI, Machine Learning, Deep Learning, and Data Science, intelligent systems, the AI lifecycle, and applications in various fields [4, 5].\n\u2022 **AI Problem Solving**: Covers problem formulation, state-space representation, problem characteristics, search space, solution space, performance measures, and problem-solving approaches [5].\n\nUnit VI\n\u2022 **Evolution and Responsible AI**: Covers the evolution of Machi",
+      "rating": "dislike",
+      "opinion": "unit numbering are wrong",
+      "active_docs": [
+        "DSA Syllabus.PDF",
+        "AI syllabus.pdf"
+      ],
+      "timestamp": "2026-11-24T18:01:14.999493"
+    },
+    {
+      "id": "fb_1795523525258",
+      "query": "syllanus of dsa",
+      "answer": "**Data Structures and Algorithms Syllabus**\n\n\u2022 **Unit I**: Array representation, array operations including traversal, insertion, deletion, sorting, searching, merging, and complexity analysis [5]. Sorting and searching techniques cover bubble sort, insertion sort, selection sort, linear search, and binary search [5]. Programs for implementing insertion and deletion operations in arrays [4].\n\u2022 **Unit II**: Linked lists covering introduction, memory representation, allocation, traversal, insertion, deletion, header linked lists (grounded and circular), and two-way lists operations [5]. Doubly l",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [
+        "DSA Syllabus.PDF",
+        "AI syllabus.pdf"
+      ],
+      "timestamp": "2026-11-24T18:02:05.258684"
+    },
+    {
+      "id": "fb_1795523555795",
+      "query": "syllanus of dsa",
+      "answer": "**Data Structures and Algorithms Syllabus**\n\n\u2022 **Unit I**: Array representation, array operations including traversal, insertion, deletion, sorting, searching, merging, and complexity analysis [5]. Sorting and searching techniques cover bubble sort, insertion sort, selection sort, linear search, and binary search [5]. Programs for implementing insertion and deletion operations in arrays [4].\n\u2022 **Unit II**: Linked lists covering introduction, memory representation, allocation, traversal, insertion, deletion, header linked lists (grounded and circular), and two-way lists operations [5]. Doubly l",
+      "rating": "dislike",
+      "opinion": "when you use unit for this , so do it for all units",
+      "active_docs": [
+        "DSA Syllabus.PDF",
+        "AI syllabus.pdf"
+      ],
+      "timestamp": "2026-11-24T18:02:35.795084"
+    },
+    {
+      "id": "fb_1795523713559",
+      "query": "syllabus if computer network",
+      "answer": "**Computer Network Syllabus**\n\n\u2022 **Unit I**: Introduction to Computer Networks, Networks and Types, Network hardware architecture and its topologies and devices like HUB, Switch and Routers, Network software architecture and its layers and protocols, OSI Model, TCP/IP protocol suite [1].\n\u2022 **Unit II**: Physical Layer covering Basics for Data Communications, Transmission Media - Guided and Unguided [1].\n\u2022 **Unit VI**: Application Layer covering Domain Name System, E Mail, FTP, along with Wireless Networks including Introduction, IEEE 802.11 (802.11a, 802.11b, 802.11g, 802.11n), and Bluetooth Ar",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [
+        "AI syllabus.pdf",
+        "frmCourseSyllabusIPDownload(3).PDF"
+      ],
+      "timestamp": "2026-11-24T18:05:13.559080"
+    },
+    {
+      "id": "fb_1795523724866",
+      "query": "syllabus if computer network",
+      "answer": "**Computer Network Syllabus**\n\n\u2022 **Unit I**: Introduction to Computer Networks, Networks and Types, Network hardware architecture and its topologies and devices like HUB, Switch and Routers, Network software architecture and its layers and protocols, OSI Model, TCP/IP protocol suite [1].\n\u2022 **Unit II**: Physical Layer covering Basics for Data Communications, Transmission Media - Guided and Unguided [1].\n\u2022 **Unit VI**: Application Layer covering Domain Name System, E Mail, FTP, along with Wireless Networks including Introduction, IEEE 802.11 (802.11a, 802.11b, 802.11g, 802.11n), and Bluetooth Ar",
+      "rating": "dislike",
+      "opinion": "it is wrong answer",
+      "active_docs": [
+        "AI syllabus.pdf",
+        "frmCourseSyllabusIPDownload(3).PDF"
+      ],
+      "timestamp": "2026-11-24T18:05:24.866091"
+    },
+    {
+      "id": "fb_1795560324886",
+      "query": "how are you",
+      "answer": "I don't know based on the provided notes. This information is not mentioned in your uploaded documents.",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [
+        "AI syllabus.pdf",
+        "frmCourseSyllabusIPDownload(3).PDF"
+      ],
+      "timestamp": "2026-11-25T04:15:24.886622"
+    },
+    {
+      "id": "fb_1795560486297",
+      "query": "how are you",
+      "answer": "I don't know based on the provided notes. This information is not mentioned in your uploaded documents.",
+      "rating": "dislike",
+      "opinion": "when user ask normal question , which is not in file, and it is normal question like how are you, or any simple question or chat , answer that question, but whenever user ask what is the sylllabus of \"any thing\" , because it is related to study , just say \"Don't know,...\".",
+      "active_docs": [
+        "AI syllabus.pdf",
+        "frmCourseSyllabusIPDownload(3).PDF"
+      ],
+      "timestamp": "2026-11-25T04:18:06.297807"
+    },
+    {
+      "id": "fb_1795592159008",
+      "query": "Summary of Document Summary: CSE276 Artificial Intelligence Foundations Syllabus",
+      "answer": "This document outlines the CSE276 Artificial Intelligence Foundations course curriculum, covering fundamental concepts, search techniques, knowledge representation, intelligent agents, and modern paradigms like generative AI and machine learning. The syllabus combines theoretical foundations with practical laboratory experiments spanning classic algorithms to large language models.",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-25T13:05:59.009272"
+    },
+    {
+      "id": "fb_1795592162551",
+      "query": "Summary of Document Summary: CSE276 Artificial Intelligence Foundations Syllabus",
+      "answer": "This document outlines the CSE276 Artificial Intelligence Foundations course curriculum, covering fundamental concepts, search techniques, knowledge representation, intelligent agents, and modern paradigms like generative AI and machine learning. The syllabus combines theoretical foundations with practical laboratory experiments spanning classic algorithms to large language models.",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-25T13:06:02.551253"
+    },
+    {
+      "id": "fb_1795592164124",
+      "query": "Summary of Document Summary: CSE276 Artificial Intelligence Foundations Syllabus",
+      "answer": "This document outlines the CSE276 Artificial Intelligence Foundations course curriculum, covering fundamental concepts, search techniques, knowledge representation, intelligent agents, and modern paradigms like generative AI and machine learning. The syllabus combines theoretical foundations with practical laboratory experiments spanning classic algorithms to large language models.",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-25T13:06:04.124802"
+    },
+    {
+      "id": "fb_1795592164319",
+      "query": "Summary of Document Summary: CSE276 Artificial Intelligence Foundations Syllabus",
+      "answer": "This document outlines the CSE276 Artificial Intelligence Foundations course curriculum, covering fundamental concepts, search techniques, knowledge representation, intelligent agents, and modern paradigms like generative AI and machine learning. The syllabus combines theoretical foundations with practical laboratory experiments spanning classic algorithms to large language models.",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-25T13:06:04.319862"
+    },
+    {
+      "id": "fb_1795592164533",
+      "query": "Summary of Document Summary: CSE276 Artificial Intelligence Foundations Syllabus",
+      "answer": "This document outlines the CSE276 Artificial Intelligence Foundations course curriculum, covering fundamental concepts, search techniques, knowledge representation, intelligent agents, and modern paradigms like generative AI and machine learning. The syllabus combines theoretical foundations with practical laboratory experiments spanning classic algorithms to large language models.",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-25T13:06:04.533794"
+    },
+    {
+      "id": "fb_1795592164736",
+      "query": "Summary of Document Summary: CSE276 Artificial Intelligence Foundations Syllabus",
+      "answer": "This document outlines the CSE276 Artificial Intelligence Foundations course curriculum, covering fundamental concepts, search techniques, knowledge representation, intelligent agents, and modern paradigms like generative AI and machine learning. The syllabus combines theoretical foundations with practical laboratory experiments spanning classic algorithms to large language models.",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-25T13:06:04.736732"
+    },
+    {
+      "id": "fb_1795592166023",
+      "query": "Summary of Document Summary: CSE276 Artificial Intelligence Foundations Syllabus",
+      "answer": "This document outlines the CSE276 Artificial Intelligence Foundations course curriculum, covering fundamental concepts, search techniques, knowledge representation, intelligent agents, and modern paradigms like generative AI and machine learning. The syllabus combines theoretical foundations with practical laboratory experiments spanning classic algorithms to large language models.",
+      "rating": "like",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-25T13:06:06.023732"
+    },
+    {
+      "id": "fb_1795592167594",
+      "query": "Summary of Document Summary: CSE276 Artificial Intelligence Foundations Syllabus",
+      "answer": "This document outlines the CSE276 Artificial Intelligence Foundations course curriculum, covering fundamental concepts, search techniques, knowledge representation, intelligent agents, and modern paradigms like generative AI and machine learning. The syllabus combines theoretical foundations with practical laboratory experiments spanning classic algorithms to large language models.",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-25T13:06:07.594407"
+    },
+    {
+      "id": "fb_1795592171690",
+      "query": "Summary of Document Summary: CSE276 Artificial Intelligence Foundations Syllabus",
+      "answer": "This document outlines the CSE276 Artificial Intelligence Foundations course curriculum, covering fundamental concepts, search techniques, knowledge representation, intelligent agents, and modern paradigms like generative AI and machine learning. The syllabus combines theoretical foundations with practical laboratory experiments spanning classic algorithms to large language models.",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-25T13:06:11.690864"
+    },
+    {
+      "id": "fb_1795593358192",
+      "user_id": "student_alex@test.com",
+      "query": "Explain sorting algorithms",
+      "answer": "Sorting algorithms rearrange elements...",
+      "rating": "dislike",
+      "opinion": "Too brief / need more detail",
+      "active_docs": [],
+      "timestamp": "2026-11-25T13:25:58.192910"
+    },
+    {
+      "id": "fb_1795593683236",
+      "user_id": "guest",
+      "query": "Summary of Summary: AI syllabus.pdf",
+      "answer": "Structured summary of AI syllabus.pdf covering main topics, definitions, and formulas.",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-25T13:31:23.236616"
+    },
+    {
+      "id": "fb_1795593688426",
+      "user_id": "guest",
+      "query": "Summary of Summary: AI syllabus.pdf",
+      "answer": "Structured summary of AI syllabus.pdf covering main topics, definitions, and formulas.",
+      "rating": "like",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-25T13:31:28.426668"
+    },
+    {
+      "id": "fb_1795593689733",
+      "user_id": "guest",
+      "query": "Summary of Summary: AI syllabus.pdf",
+      "answer": "Structured summary of AI syllabus.pdf covering main topics, definitions, and formulas.",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-25T13:31:29.733136"
+    },
+    {
+      "id": "fb_1795593764130",
+      "user_id": "guest",
+      "query": "Summary of Document Summary: CSE276 Artificial Intelligence Foundations",
+      "answer": "This document outlines the curriculum for CSE276 Artificial Intelligence Foundations, structured across six comprehensive units covering classical search, knowledge representation, intelligent agents, modern AI paradigms, generative AI, and the AI development ecosystem. The course blends theoretical foundations with practical implementations spanning search algorithms, expert systems, machine learning, and large language models.",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-25T13:32:44.130805"
+    },
+    {
+      "id": "fb_1795593769065",
+      "user_id": "guest",
+      "query": "Summary of Document Summary: CSE276 Artificial Intelligence Foundations",
+      "answer": "This document outlines the curriculum for CSE276 Artificial Intelligence Foundations, structured across six comprehensive units covering classical search, knowledge representation, intelligent agents, modern AI paradigms, generative AI, and the AI development ecosystem. The course blends theoretical foundations with practical implementations spanning search algorithms, expert systems, machine learning, and large language models.",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-25T13:32:49.065698"
+    },
+    {
+      "id": "fb_1795593769962",
+      "user_id": "guest",
+      "query": "Summary of Document Summary: CSE276 Artificial Intelligence Foundations",
+      "answer": "This document outlines the curriculum for CSE276 Artificial Intelligence Foundations, structured across six comprehensive units covering classical search, knowledge representation, intelligent agents, modern AI paradigms, generative AI, and the AI development ecosystem. The course blends theoretical foundations with practical implementations spanning search algorithms, expert systems, machine learning, and large language models.",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-25T13:32:49.962309"
+    },
+    {
+      "id": "fb_1795593770158",
+      "user_id": "guest",
+      "query": "Summary of Document Summary: CSE276 Artificial Intelligence Foundations",
+      "answer": "This document outlines the curriculum for CSE276 Artificial Intelligence Foundations, structured across six comprehensive units covering classical search, knowledge representation, intelligent agents, modern AI paradigms, generative AI, and the AI development ecosystem. The course blends theoretical foundations with practical implementations spanning search algorithms, expert systems, machine learning, and large language models.",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-25T13:32:50.158127"
+    },
+    {
+      "id": "fb_1795593770353",
+      "user_id": "guest",
+      "query": "Summary of Document Summary: CSE276 Artificial Intelligence Foundations",
+      "answer": "This document outlines the curriculum for CSE276 Artificial Intelligence Foundations, structured across six comprehensive units covering classical search, knowledge representation, intelligent agents, modern AI paradigms, generative AI, and the AI development ecosystem. The course blends theoretical foundations with practical implementations spanning search algorithms, expert systems, machine learning, and large language models.",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-25T13:32:50.353158"
+    },
+    {
+      "id": "fb_1795593770576",
+      "user_id": "guest",
+      "query": "Summary of Document Summary: CSE276 Artificial Intelligence Foundations",
+      "answer": "This document outlines the curriculum for CSE276 Artificial Intelligence Foundations, structured across six comprehensive units covering classical search, knowledge representation, intelligent agents, modern AI paradigms, generative AI, and the AI development ecosystem. The course blends theoretical foundations with practical implementations spanning search algorithms, expert systems, machine learning, and large language models.",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-25T13:32:50.576683"
+    },
+    {
+      "id": "fb_1795593771501",
+      "user_id": "guest",
+      "query": "Summary of Document Summary: CSE276 Artificial Intelligence Foundations",
+      "answer": "This document outlines the curriculum for CSE276 Artificial Intelligence Foundations, structured across six comprehensive units covering classical search, knowledge representation, intelligent agents, modern AI paradigms, generative AI, and the AI development ecosystem. The course blends theoretical foundations with practical implementations spanning search algorithms, expert systems, machine learning, and large language models.",
+      "rating": "like",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-25T13:32:51.501198"
+    },
+    {
+      "id": "fb_1795593773169",
+      "user_id": "guest",
+      "query": "Summary of Document Summary: CSE276 Artificial Intelligence Foundations",
+      "answer": "This document outlines the curriculum for CSE276 Artificial Intelligence Foundations, structured across six comprehensive units covering classical search, knowledge representation, intelligent agents, modern AI paradigms, generative AI, and the AI development ecosystem. The course blends theoretical foundations with practical implementations spanning search algorithms, expert systems, machine learning, and large language models.",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-25T13:32:53.169959"
+    },
+    {
+      "id": "fb_1795594536414",
+      "user_id": "student@gmail.com",
+      "query": "syllabus of cn",
+      "answer": "**Computer Networks (CSE306) Syllabus Outline**\n\n\u2022 **Unit I - Introduction and Network Models**: Covers introduction to computer networks, network types, hardware architecture, topologies, and devices such as hubs, switches, and routers [1]. It also covers network software architecture layers and protocols, the OSI Model, and the TCP/IP protocol suite [1].\n\u2022 **Unit II - Physical Layer**: Covers the basics of data communications and transmission media, categorized into guided and unguided media [1].\n\u2022 **Unit V - Transport Layer Congestion Control**: Covers congestion control algorithms and TCP ",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [
+        "AI syllabus.pdf",
+        "cn.PDF"
+      ],
+      "timestamp": "2026-11-25T13:45:36.414996"
+    },
+    {
+      "id": "fb_1795594542387",
+      "user_id": "student@gmail.com",
+      "query": "syllabus of cn",
+      "answer": "**Computer Networks (CSE306) Syllabus Outline**\n\n\u2022 **Unit I - Introduction and Network Models**: Covers introduction to computer networks, network types, hardware architecture, topologies, and devices such as hubs, switches, and routers [1]. It also covers network software architecture layers and protocols, the OSI Model, and the TCP/IP protocol suite [1].\n\u2022 **Unit II - Physical Layer**: Covers the basics of data communications and transmission media, categorized into guided and unguided media [1].\n\u2022 **Unit V - Transport Layer Congestion Control**: Covers congestion control algorithms and TCP ",
+      "rating": "like",
+      "opinion": "",
+      "active_docs": [
+        "AI syllabus.pdf",
+        "cn.PDF"
+      ],
+      "timestamp": "2026-11-25T13:45:42.387789"
+    },
+    {
+      "id": "fb_1795594574630",
+      "user_id": "student@gmail.com",
+      "query": "syllbus of ai",
+      "answer": "**Artificial Intelligence Foundations (CSE276) Syllabus Overview**\n\n\u2022 **Foundations and Evolution**: Covers the history, characteristics, and types of **Artificial Intelligence**, including the distinction between AI and **Machine Learning** [4]. It also explores the evolution of **Machine Learning**, **Deep Learning**, and modern paradigms [1].\n\n\u2022 **Problem Solving and Agents**: Focuses on **state-space formulation** and classical **search techniques** [4]. It includes **knowledge representation**, reasoning techniques, and **intelligent agent models**, such as multi-agent systems and human-A",
+      "rating": "like",
+      "opinion": "",
+      "active_docs": [
+        "AI syllabus.pdf",
+        "cn.PDF"
+      ],
+      "timestamp": "2026-11-25T13:46:14.630969"
+    },
+    {
+      "id": "fb_1795598133118",
+      "user_id": "student@gmail.com",
+      "query": "Summary of Summary: cn.PDF",
+      "answer": "Structured summary of cn.PDF covering main topics, definitions, and formulas.",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-25T14:45:33.118172"
+    },
+    {
+      "id": "fb_1795598136474",
+      "user_id": "student@gmail.com",
+      "query": "Summary of Summary: cn.PDF",
+      "answer": "Structured summary of cn.PDF covering main topics, definitions, and formulas.",
+      "rating": "dislike",
+      "opinion": "Too brief / need more detail",
+      "active_docs": [],
+      "timestamp": "2026-11-25T14:45:36.474491"
+    },
+    {
+      "id": "fb_1795600793750",
+      "user_id": "student@gmail.com",
+      "query": "Summary of Course Syllabus: CSE276 Artificial Intelligence Foundations",
+      "answer": "This syllabus outlines the CSE276 Artificial Intelligence Foundations course, providing a comprehensive guide to classical search algorithms, knowledge representation, intelligent agent architectures, modern machine learning paradigms, Generative AI, and responsible AI governance.",
+      "rating": "like",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-25T15:29:53.750499"
+    },
+    {
+      "id": "fb_1795753269680",
+      "user_id": "student@gmail.com",
+      "query": "Summary of Course Syllabus: CSE276 Artificial Intelligence Foundations",
+      "answer": "This syllabus outlines the CSE276 course on Artificial Intelligence Foundations, detailing core topics in classical search, knowledge representation, intelligent agents, machine/deep learning paradigms, Generative AI, Responsible AI, and modern AI development frameworks.",
+      "rating": "like",
+      "opinion": "",
+      "active_docs": [],
+      "timestamp": "2026-11-27T09:51:09.680020"
+    },
+    {
+      "id": "fb_1795753435843",
+      "user_id": "student@gmail.com",
+      "query": "i am rohit",
+      "answer": "Nice to meet you, Rohit! \ud83d\udc4b I am StudyRAG, your interactive AI study tutor. I'm excited to help you master your course, **CSE276: Artificial Intelligence Foundations** [1]!\n\nTo give you a clear roadmap of what we can cover based on your uploaded syllabus, here is a detailed breakdown of the main units [1]:\n\n\u2022 **Unit I: Foundations of Artificial Intelligence**\n  Covers the history and evolution of AI, characteristics, types of AI, and distinctions between AI vs. Machine Learning [1]. It also introduces state-space problem formulation, search space, solution space, and performance measures [3].\n\n",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [
+        "AI syllabus.pdf"
+      ],
+      "timestamp": "2026-11-27T09:53:55.843021"
+    },
+    {
+      "id": "fb_1795753529685",
+      "user_id": "student@gmail.com",
+      "query": "i am rohit",
+      "answer": "Nice to meet you, Rohit! \ud83d\udc4b I am StudyRAG, your interactive AI study tutor. I'm excited to help you master your course, **CSE276: Artificial Intelligence Foundations** [1]!\n\nTo give you a clear roadmap of what we can cover based on your uploaded syllabus, here is a detailed breakdown of the main units [1]:\n\n\u2022 **Unit I: Foundations of Artificial Intelligence**\n  Covers the history and evolution of AI, characteristics, types of AI, and distinctions between AI vs. Machine Learning [1]. It also introduces state-space problem formulation, search space, solution space, and performance measures [3].\n\n",
+      "rating": "dislike",
+      "opinion": "here user just say \"i am rohit\", so you should just response his chat not give this content directly, because user dont say anything , or ask",
+      "active_docs": [
+        "AI syllabus.pdf"
+      ],
+      "timestamp": "2026-11-27T09:55:29.685627"
+    },
+    {
+      "id": "fb_1795753785928",
+      "user_id": "student@gmail.com",
+      "query": "hi , i am rohit",
+      "answer": "Hello Rohit! Great to chat with you! \ud83d\ude0a\n\nHow can I assist you with your **CSE276: Artificial Intelligence Foundations** course today [1]? \n\nHere are a few ways we can work together:\n\u2022 **Explain a Specific Concept:** Dive deep into topics like State-Space Formulation, Machine Learning vs. AI, or Responsible AI [1], [5].\n\u2022 **Review Syllabus Units:** Break down any of the units from your syllabus in full detail [1].\n\u2022 **Practice & Revision:** Work through examples, practice questions, or concept summaries.\n\nWhat topic or question would you like to focus on today?",
+      "rating": "dislike",
+      "opinion": "",
+      "active_docs": [
+        "AI syllabus.pdf"
+      ],
+      "timestamp": "2026-11-27T09:59:45.928267"
+    },
+    {
+      "id": "fb_1795753789381",
+      "user_id": "student@gmail.com",
+      "query": "hi , i am rohit",
+      "answer": "Hello Rohit! Great to chat with you! \ud83d\ude0a\n\nHow can I assist you with your **CSE276: Artificial Intelligence Foundations** course today [1]? \n\nHere are a few ways we can work together:\n\u2022 **Explain a Specific Concept:** Dive deep into topics like State-Space Formulation, Machine Learning vs. AI, or Responsible AI [1], [5].\n\u2022 **Review Syllabus Units:** Break down any of the units from your syllabus in full detail [1].\n\u2022 **Practice & Revision:** Work through examples, practice questions, or concept summaries.\n\nWhat topic or question would you like to focus on today?",
+      "rating": "dislike",
+      "opinion": "too slow",
+      "active_docs": [
+        "AI syllabus.pdf"
+      ],
+      "timestamp": "2026-11-27T09:59:49.381624"
+    }
+  ],
+  "learned_rules": [
+    "User prefers you to avoid: in a structured formate",
+    "User prefers you to avoid: unit numbering are wrong",
+    "User prefers you to avoid: when you use unit for this , so do it for all units",
+    "User prefers you to avoid: it is wrong answer",
+    "Keep explanations especially concise and direct; focus on high-yield exam takeaways.",
+    "Provide thorough, detailed coverage of key concepts and sub-topics explicitly found in the notes.",
+    "User prefers you to avoid: here user just say \"i am rohit\", so you should just response his chat not give this content directly, because user dont say anything , or ask",
+    "User prefers you to avoid: too slow"
+  ],
+  "user_rules": {
+    "student_alex@test.com": [
+      "Keep explanations especially concise and direct; focus on high-yield exam takeaways."
+    ],
+    "guest": [],
+    "student@gmail.com": [
+      "Provide thorough, detailed coverage of key concepts and sub-topics explicitly found in the notes.",
+      "User prefers you to avoid: here user just say \"i am rohit\", so you should just response his chat not give this content directly, because user dont say anything , or ask",
+      "User prefers you to avoid: too slow"
+    ]
+  }
+}

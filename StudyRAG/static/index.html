@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <meta content="web_dashboard" name="shell-type" />
+  <title>StudyRAG - AI Study Assistant</title>
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    rel="stylesheet" />
+  <style>
+    @layer base {
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        overscroll-behavior: none;
+        background-color: #161618 !important;
+        color: #f8fafc !important;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+      }
+
+      main> :first-child {
+        margin-top: 0 !important;
+      }
+
+      main> :last-child {
+        margin-bottom: 0 !important;
+      }
+    }
+
+    /* Crisp custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #0A0A0A;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #38383E;
+      border-radius: 9999px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4B4B54;
+    }
+
+    .loading-pulse {
+      animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: .4;
+      }
+    }
+
+    /* Collapsible panels */
+    #left-panel {
+      transition: width 0.3s ease;
+      overflow: hidden;
+    }
+
+    #left-panel.collapsed {
+      width: 48px !important;
+    }
+
+    #left-panel.collapsed .panel-expanded-view {
+      display: none !important;
+    }
+
+    #left-panel:not(.collapsed) .panel-collapsed-view {
+      display: none !important;
+    }
+
+    /* User message action buttons */
+    .user-msg-actions {
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .user-msg-wrapper:hover .user-msg-actions {
+      opacity: 1;
+    }
+
+    /* File item action buttons */
+    .file-actions {
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .file-item:hover .file-actions {
+      opacity: 1;
+    }
+
+    /* Mic recording pulse */
+    @keyframes mic-pulse {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
+      }
+
+      50% {
+        box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+      }
+    }
+
+    .mic-recording {
+      animation: mic-pulse 1.2s ease-in-out infinite;
+      background-color: #ef4444 !important;
+    }
+
+    /* Citation collapse animation */
+    .citations-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+
+    .citations-body.expanded {
+      max-height: 600px;
+    }
+
+    /* High-contrast dark theme overrides (Crisp, sharp, no blur) */
+    body {
+      background-color: #161618 !important;
+      color: #f8fafc !important;
+    }
+
+    .dark-bg-page {
+      background-color: #161618 !important;
+    }
+
+    .dark-bg-surface {
+      background-color: #0A0A0A !important;
+    }
+
+    .dark-bg-card {
+      background-color: #1E1E24 !important;
+    }
+
+    .dark-border {
+      border-color: #38383E !important;
+    }
+
+    .dark-border-secondary {
+      border-color: #4B4B54 !important;
+    }
+
+    .dark-text {
+      color: #f8fafc !important;
+    }
+
+    .dark-text-secondary {
+      color: #cbd5e1 !important;
+    }
+
+    .dark-text-muted {
+      color: #94a3b8 !important;
+    }
+
+    .dark-bg-primary {
+      background-color: #2563eb !important;
+    }
+
+    .dark-bg-blue-light {
+      background-color: #172554 !important;
+    }
+
+    .dark-bg-input {
+      background-color: #1E1E24 !important;
+    }
+
+    /* Profile dropdown */
+    .profile-dropdown {
+      display: none;
+      position: absolute;
+      top: 100%;
+      right: 0;
+      z-index: 100;
+    }
+
+    .profile-dropdown.open {
+      display: block;
+    }
+  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              400: '#60a5fa',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+              950: '#172554',
+            },
+            surface: {
+              darkest: '#111111',
+              base: '#0A0A0A',
+              sidebar: '#161618',
+              card: '#1E1E22',
+              input: '#1E1E22',
+              border: '#2A2A2E',
+              borderLight: '#38383E'
+            }
+          },
+          borderRadius: {
+            DEFAULT: "0.25rem",
+            lg: "0.5rem",
+            xl: "0.75rem",
+            full: "9999px"
+          },
+          spacing: {
+            "space-md": "1rem",
+            "space-sm": "0.5rem",
+            "space-xl": "2.5rem",
+            "margin": "2rem",
+            "space-lg": "1.5rem",
+            "gutter": "1.5rem",
+            "margin-mobile": "1rem",
+            "space-xs": "0.25rem",
+            "gutter-mobile": "1rem"
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            "headline-sm": ["Inter"],
+            "body-sm": ["Inter"],
+            "label-code": ["JetBrains Mono"],
+            "label-meta": ["JetBrains Mono"],
+            "headline-md": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-lg": ["Inter"],
+            "title-md": ["Inter"],
+            "body-md": ["Inter"],
+            "headline-lg-mobile": ["Inter"]
+          },
+          fontSize: {
+            "headline-sm": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "label-code": ["13px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "label-meta": ["11px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+            "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+            "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "title-md": ["16px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "500" }],
+            "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "headline-lg-mobile": ["26px", { "lineHeight": "34px", "letterSpacing": "-0.015em", "fontWeight": "600" }]
+          }
+        }
+      }
+    };
+  </script>
+</head>
+
+<body class="bg-[#161618] dark-bg-page text-slate-100 font-body-md text-body-md antialiased">
+
+  <!-- Login Screen -->
+  <div id="login-screen" class="fixed inset-0 z-[100] bg-[#0A0A0A] flex items-center justify-center">
+    <div
+      class="bg-[#1E1E22] border border-[#2A2A2E] rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 flex flex-col items-center gap-6">
+      <!-- Logo -->
+      <div class="w-16 h-16 rounded-2xl bg-[#2563eb] flex items-center justify-center text-white">
+        <span class="material-symbols-outlined text-[32px]">school</span>
+      </div>
+      <div class="text-center">
+        <h1 class="font-headline-md text-headline-md text-white tracking-tight font-semibold">Study<span
+            class="text-[#60a5fa]">RAG</span></h1>
+        <p class="text-sm text-slate-400 mt-1">AI-powered study assistant grounded in your documents</p>
+      </div>
+
+      <!-- Guest Login Form -->
+      <div class="w-full flex flex-col gap-3">
+        <input id="login-name" type="text" placeholder="Your Name"
+          class="w-full px-4 py-2.5 rounded-lg border border-[#2A2A2E] bg-[#161618] text-slate-100 placeholder:text-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#3b82f6]" />
+        <input id="login-email" type="email" placeholder="Email Address"
+          class="w-full px-4 py-2.5 rounded-lg border border-[#2A2A2E] bg-[#161618] text-slate-100 placeholder:text-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#3b82f6]" />
+        <button id="guest-login-btn"
+          class="w-full py-2.5 rounded-lg bg-[#2563eb] hover:bg-[#3b82f6] text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer">
+          <span class="material-symbols-outlined text-[18px]">login</span>
+          Continue as Guest
+        </button>
+      </div>
+
+      <div class="flex items-center w-full gap-3">
+        <div class="flex-1 h-px bg-[#2A2A2E]"></div>
+        <span class="text-xs text-slate-500">OR</span>
+        <div class="flex-1 h-px bg-[#2A2A2E]"></div>
+      </div>
+
+      <!-- Google Sign-In -->
+      <button id="google-login-btn"
+        class="w-full py-2.5 rounded-lg bg-[#161618] border border-[#2A2A2E] text-slate-200 font-semibold text-sm hover:bg-[#202024] transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer">
+        <svg class="w-5 h-5" viewBox="0 0 24 24">
+          <path
+            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+            fill="#4285F4" />
+          <path
+            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+            fill="#34A853" />
+          <path
+            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+            fill="#FBBC05" />
+          <path
+            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+            fill="#EA4335" />
+        </svg>
+        Sign in with Google
+      </button>
+    </div>
+  </div>
+
+  <!-- Hidden File Input for Document Upload -->
+  <input type="file" id="file-uploader" accept=".pdf,.txt,.md" class="hidden" multiple />
+
+  <!-- Header -->
+  <header class="fixed top-0 left-0 right-0 z-50 h-16 bg-[#161618] shadow-md border-b border-[#38383E]">
+    <div class="h-16 w-full px-gutter flex items-center justify-between gap-space-md">
+      <div class="flex items-center gap-space-md">
+        <div class="w-8 h-8 rounded-lg bg-[#2563eb] flex items-center justify-center text-white font-bold text-lg">
+          <span class="material-symbols-outlined text-[20px]">school</span>
+        </div>
+        <div class="flex items-center gap-space-sm">
+          <span class="font-headline-sm text-headline-sm text-white tracking-tight font-bold">Study<span
+              class="text-[#60a5fa]">RAG</span></span>
+        </div>
+      </div>
+
+      <!-- Right Header Actions -->
+      <div class="flex items-center gap-space-md">
+        <!-- Header Upload Files Button -->
+        <button id="header-upload-btn"
+          class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#2563eb] hover:bg-[#3b82f6] text-white font-label-meta text-xs font-bold transition-all cursor-pointer active:scale-95"
+          title="Upload Document or Notes">
+          <span class="material-symbols-outlined text-[17px]">cloud_upload</span>
+          <span>Upload Files</span>
+        </button>
+
+        <!-- Continuous Learning Preferences Button (Hidden as requested) -->
+        <button id="open-learning-btn"
+          class="hidden items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/60 text-emerald-200 border border-emerald-700 hover:bg-emerald-900/60 font-label-meta text-label-meta font-bold transition-all shadow-sm cursor-pointer"
+          title="View learned user preferences & feedback history">
+          <span class="material-symbols-outlined text-[18px] text-emerald-400">psychology</span>
+          <span>Learned Preferences (<span id="learned-count">0</span>)</span>
+        </button>
+
+        <!-- Profile button -->
+        <div class="relative">
+          <button id="profile-btn"
+            class="w-8 h-8 rounded-full bg-[#2563eb] border border-[#60a5fa] flex items-center justify-center shadow-sm text-white overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#3b82f6]/50 transition"
+            title="User Profile">
+            <span id="profile-avatar-fallback" class="material-symbols-outlined text-white text-[18px]">person</span>
+            <img id="profile-avatar-img" class="w-full h-full object-cover hidden" alt="Profile" />
+          </button>
+          <!-- Profile Dropdown -->
+          <div id="profile-dropdown"
+            class="profile-dropdown w-64 bg-[#1E1E24] border border-[#38383E] rounded-xl shadow-2xl mt-2 p-4">
+            <div class="flex items-center gap-3 pb-3 border-b border-[#38383E]">
+              <div id="dropdown-avatar"
+                class="w-10 h-10 rounded-full bg-[#2563eb] flex items-center justify-center text-white font-bold text-sm overflow-hidden">
+                <span id="dropdown-avatar-text">?</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span id="dropdown-name" class="text-sm font-bold text-white truncate">Guest</span>
+                <span id="dropdown-email" class="text-xs text-slate-300 truncate">Not signed in</span>
+              </div>
+            </div>
+            <button id="sign-out-btn"
+              class="mt-3 w-full py-2 rounded-lg bg-rose-950/60 text-rose-200 border border-rose-700/60 text-sm font-semibold hover:bg-rose-900/60 transition-colors flex items-center justify-center gap-2 cursor-pointer">
+              <span class="material-symbols-outlined text-[16px]">logout</span>
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div>
+    <main class="w-full min-h-[calc(100vh-4rem)] pt-16 bg-[#161618]">
+      <div class="flex flex-col w-full">
+        <div class="w-full h-[calc(100vh-4rem)] flex overflow-hidden">
+
+          <!-- Section 1: Document Index & Corpus Selector (Interchanged: Deep Black #0A0A0A) -->
+          <section id="left-panel"
+            class="w-[300px] shrink-0 bg-[#0A0A0A] border-r border-[#38383E] flex flex-col justify-between select-none relative">
+
+            <!-- Collapsed Strip View -->
+            <div class="panel-collapsed-view w-full h-full flex flex-col items-center py-3 gap-2 bg-[#0A0A0A]">
+              <button id="left-panel-expand-btn"
+                class="w-10 h-10 rounded-xl bg-[#1E1E24] hover:bg-[#2A2A30] text-[#60a5fa] flex items-center justify-center transition-all shadow cursor-pointer border border-[#38383E]"
+                title="Open Sources Panel">
+                <span class="material-symbols-outlined text-[22px]">chevron_right</span>
+              </button>
+              <button id="left-panel-expand-folder"
+                class="w-8 h-8 rounded-lg hover:bg-[#1E1E24] text-slate-300 hover:text-white flex items-center justify-center cursor-pointer"
+                title="Open Sources">
+                <span class="material-symbols-outlined text-[18px]">folder_open</span>
+              </button>
+              <div class="mt-2 flex flex-col items-center gap-1 cursor-pointer"
+                onclick="document.getElementById('left-panel-expand-btn').click()" title="Click to Open Sources">
+                <span
+                  class="text-[9px] font-bold text-slate-300 uppercase tracking-widest [writing-mode:vertical-lr] rotate-180">SOURCES</span>
+              </div>
+
+              <!-- AI Tools Section in Collapsed Strip -->
+              <div class="w-8 border-t border-[#38383E] my-2"></div>
+              <button id="left-panel-tools-btn"
+                class="w-10 h-10 rounded-xl bg-[#1E1E24] hover:bg-[#2A2A30] text-amber-300 flex items-center justify-center transition-all shadow-sm cursor-pointer border border-amber-600/40"
+                title="Open AI Tools">
+                <span class="material-symbols-outlined text-[20px]">psychology</span>
+              </button>
+              <div class="mt-1 flex flex-col items-center gap-1 cursor-pointer"
+                onclick="document.getElementById('left-panel-tools-btn').click()" title="Click to Open AI Tools">
+                <span
+                  class="text-[9px] font-bold text-amber-300 uppercase tracking-widest [writing-mode:vertical-lr] rotate-180">TOOLS</span>
+              </div>
+            </div>
+
+            <!-- Expanded View -->
+            <div class="panel-expanded-view flex flex-col h-full overflow-hidden w-[300px]">
+              <!-- Hidden references to maintain backwards compatibility with JS -->
+              <span id="sources-badge" class="hidden"></span>
+              <button id="sidebar-upload-btn" class="hidden"></button>
+
+              <div class="p-space-md flex flex-col gap-3 overflow-y-auto flex-1 pt-3">
+                <!-- Upload Progress / Status Indicator -->
+                <div id="upload-status"
+                  class="hidden p-space-sm rounded-lg bg-[#172554] border border-[#2563eb] text-xs text-[#93c5fd] flex items-center gap-2 shadow-xs font-semibold">
+                  <span class="material-symbols-outlined animate-spin text-[16px]">sync</span>
+                  <span id="upload-status-text">Processing document...</span>
+                </div>
+
+                <!-- Toggleable Sources List -->
+                <div class="flex flex-col gap-2">
+                  <div class="flex items-center justify-between px-1">
+                    <button id="toggle-corpus-btn"
+                      class="flex items-center gap-1 text-[11px] uppercase tracking-wider text-slate-300 font-bold hover:text-white transition-colors cursor-pointer">
+                      <span id="corpus-toggle-icon"
+                        class="material-symbols-outlined text-[16px] transition-transform">expand_more</span>
+                      <span>Sources (<span id="corpus-count-num">0</span>)</span>
+                    </button>
+                    <div class="flex items-center gap-2">
+                      <button id="select-all-btn"
+                        class="font-label-meta text-xs text-[#60a5fa] hover:text-[#93c5fd] font-bold cursor-pointer">Select
+                        all</button>
+                      <button id="left-panel-collapse-btn"
+                        class="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-white hover:bg-neutral-800 rounded transition-colors cursor-pointer"
+                        title="Collapse Sources Panel">
+                        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div id="corpus-list-container" class="transition-all duration-200">
+                    <div id="corpus-list" class="flex flex-col gap-2">
+                      <div
+                        class="text-xs text-slate-300 italic p-3 text-center rounded-xl border border-dashed border-[#38383E] bg-[#111111]">
+                        No documents uploaded yet.<br>Click "+" on search bar to upload.</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Hidden references for backward compatibility -->
+                <div id="dropzone" class="hidden"></div>
+                <button id="browse-btn" class="hidden"></button>
+              </div>
+
+              <!-- AI Tools (4 Core Features) -->
+              <div class="p-3 border-t border-[#38383E] bg-[#0A0A0A] flex flex-col gap-2">
+                <span class="font-label-meta text-[10px] uppercase tracking-widest text-slate-300 font-bold px-0.5">
+                  AI Tools
+                </span>
+                <div class="grid grid-cols-2 gap-2">
+                  <button id="summarize-btn"
+                    class="py-2 px-2 rounded-lg bg-[#18181C] hover:bg-[#222228] text-blue-200 border border-blue-500/50 hover:border-blue-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    title="Generate structured document summary">
+                    <span class="material-symbols-outlined text-[16px] text-blue-400">summarize</span>
+                    <span>Summary</span>
+                  </button>
+                  <button id="mcq-btn"
+                    class="py-2 px-2 rounded-lg bg-[#18181C] hover:bg-[#222228] text-emerald-200 border border-emerald-500/50 hover:border-emerald-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    title="Generate 5-question practice quiz">
+                    <span class="material-symbols-outlined text-[16px] text-emerald-400">quiz</span>
+                    <span>MCQ Quiz</span>
+                  </button>
+                  <button id="flashcards-btn"
+                    class="py-2 px-2 rounded-lg bg-[#18181C] hover:bg-[#222228] text-amber-200 border border-amber-500/50 hover:border-amber-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    title="Generate active recall flashcards">
+                    <span class="material-symbols-outlined text-[16px] text-amber-400">style</span>
+                    <span>Flashcards</span>
+                  </button>
+                  <button id="cheatsheet-btn"
+                    class="py-2 px-2 rounded-lg bg-[#18181C] hover:bg-[#222228] text-purple-200 border border-purple-500/50 hover:border-purple-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    title="Generate 1-page high-yield revision cheat sheet">
+                    <span class="material-symbols-outlined text-[16px] text-purple-400">fact_check</span>
+                    <span>Cheat Sheet</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Section 2: Center Synthesis & Grounded Chat (Interchanged: Modern Charcoal #161618) -->
+          <section class="flex-1 bg-[#161618] flex flex-col justify-between overflow-hidden relative">
+
+            <!-- Conversation Scroll Canvas -->
+            <div id="chat-canvas" class="flex-1 overflow-y-auto p-space-lg pb-36 flex flex-col gap-space-lg">
+
+              <!-- Welcome Bot Message -->
+              <div class="flex items-start gap-space-sm max-w-3xl mr-auto">
+                <div
+                  class="w-9 h-9 rounded-xl bg-[#2563eb] text-white flex items-center justify-center shrink-0 border border-[#38383E]">
+                  <span class="material-symbols-outlined text-[20px]">auto_awesome</span>
+                </div>
+                <div class="flex flex-col gap-space-md flex-1">
+                  <div class="bg-[#1E1E24] p-6 rounded-2xl rounded-tl-none shadow-xl border border-[#38383E]">
+                    <div class="text-slate-100 space-y-3 leading-relaxed font-body-md text-body-md">
+                      <div class="flex items-center gap-2.5">
+                        <h1 class="text-base font-bold text-[#60a5fa] tracking-tight">Welcome to StudyRAG!</h1>
+                      </div>
+                      <p class="text-xs text-slate-200">I am your strictly grounded academic study assistant. Here is
+                        how I protect your learning:</p>
+                      <ul class="space-y-2 text-xs text-slate-200 leading-relaxed pl-1">
+                        <li class="flex items-start">
+                          <span
+                            class="inline-block w-1.5 h-1.5 rounded-full bg-[#60a5fa] mt-1.5 mr-2.5 shrink-0"></span>
+                          <span><strong class="text-white font-bold">100% Grounded Answers:</strong> I answer only from
+                            your uploaded documents.</span>
+                        </li>
+                        <li class="flex items-start">
+                          <span
+                            class="inline-block w-1.5 h-1.5 rounded-full bg-[#60a5fa] mt-1.5 mr-2.5 shrink-0"></span>
+                          <span><strong class="text-white font-bold">Exact Citations:</strong> Every answer links to the
+                            exact page and passage in your notes.</span>
+                        </li>
+                        <li class="flex items-start">
+                          <span
+                            class="inline-block w-1.5 h-1.5 rounded-full bg-[#60a5fa] mt-1.5 mr-2.5 shrink-0"></span>
+                          <span><strong class="text-white font-bold">Zero Hallucination ("I Don't Know"):</strong> If
+                            the answer isn't in your notes, I will explicitly tell you instead of guessing.</span>
+                        </li>
+                        <li class="flex items-start">
+                          <span
+                            class="inline-block w-1.5 h-1.5 rounded-full bg-[#60a5fa] mt-1.5 mr-2.5 shrink-0"></span>
+                          <span><strong class="text-white font-bold">Document Summaries:</strong> Click "Summarize this
+                            document" to get structured chapter summaries.</span>
+                        </li>
+                        <li class="flex items-start">
+                          <span
+                            class="inline-block w-1.5 h-1.5 rounded-full bg-[#60a5fa] mt-1.5 mr-2.5 shrink-0"></span>
+                          <span><strong class="text-white font-bold">Continuous Model Training:</strong> Click
+                            "Helpful", "Needs Work", or "Feedback / Train" on any response to train me to adapt to your
+                            study style.</span>
+                        </li>
+                      </ul>
+                      <p class="text-xs text-slate-300 pt-1">To get started, click the <strong
+                          class="text-[#60a5fa] font-bold">+</strong> button in the search bar or <span
+                          class="text-white font-semibold">"Upload Files"</span> above!</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Floating Center Query Bar -->
+            <div id="query-bar-container"
+              class="group/query-bar absolute bottom-5 left-0 right-0 max-w-3xl mx-auto px-4 z-20 pointer-events-none transition-all pt-6 -mt-6">
+              <div
+                class="pointer-events-auto bg-[#1E1E24] rounded-2xl shadow-2xl shadow-black border border-[#3E3E48] p-2 flex flex-col gap-1.5 transition-all hover:border-[#52525E] focus-within:border-[#3b82f6]">
+                <!-- Quick Study Feature Chips (Dynamically revealed on hover near/on bar or focus) -->
+                <div id="quick-tools-bar"
+                  class="max-h-0 opacity-0 -translate-y-1 overflow-hidden pointer-events-none transition-all duration-300 ease-in-out group-hover/query-bar:max-h-12 group-hover/query-bar:opacity-100 group-hover/query-bar:translate-y-0 group-hover/query-bar:pointer-events-auto focus-within:max-h-12 focus-within:opacity-100 focus-within:translate-y-0 focus-within:pointer-events-auto flex items-center gap-2 overflow-x-auto pb-1 text-xs no-scrollbar">
+                  <span class="text-slate-300 font-bold text-[11px] shrink-0">Tools:</span>
+                  <button id="chip-summary"
+                    class="px-2.5 py-1 rounded-full bg-blue-950 hover:bg-blue-900 text-blue-100 border border-blue-500 shrink-0 flex items-center gap-1 transition-colors cursor-pointer font-bold shadow-xs"
+                    title="Generate Summary">
+                    <span class="material-symbols-outlined text-[13px] text-blue-400">summarize</span>
+                    <span>Summary</span>
+                  </button>
+                  <button id="chip-mcq"
+                    class="px-2.5 py-1 rounded-full bg-emerald-950 hover:bg-emerald-900 text-emerald-100 border border-emerald-500 shrink-0 flex items-center gap-1 transition-colors cursor-pointer font-bold shadow-xs"
+                    title="Generate 5 MCQs Quiz">
+                    <span class="material-symbols-outlined text-[13px] text-emerald-400">quiz</span>
+                    <span>5 MCQs Quiz</span>
+                  </button>
+                  <button id="chip-flashcards"
+                    class="px-2.5 py-1 rounded-full bg-amber-950 hover:bg-amber-900 text-amber-100 border border-amber-500 shrink-0 flex items-center gap-1 transition-colors cursor-pointer font-bold shadow-xs"
+                    title="Generate Active Recall Flashcards">
+                    <span class="material-symbols-outlined text-[13px] text-amber-400">style</span>
+                    <span>Flashcards</span>
+                  </button>
+                  <button id="chip-cheatsheet"
+                    class="px-2.5 py-1 rounded-full bg-purple-950 hover:bg-purple-900 text-purple-100 border border-purple-500 shrink-0 flex items-center gap-1 transition-colors cursor-pointer font-bold shadow-xs"
+                    title="Generate Revision Cheat Sheet">
+                    <span class="material-symbols-outlined text-[13px] text-purple-400">fact_check</span>
+                    <span>Cheat Sheet</span>
+                  </button>
+                </div>
+
+                <!-- Input Row -->
+                <div class="flex items-center gap-2 px-1">
+                  <!-- "+" Upload Button -->
+                  <button id="chat-upload-btn"
+                    class="w-8 h-8 rounded-xl bg-[#2A2A32] hover:bg-[#383842] text-slate-200 hover:text-white flex items-center justify-center transition-all cursor-pointer shrink-0 border border-[#484854] shadow-xs"
+                    title="Upload Document or Notes (+)">
+                    <span class="material-symbols-outlined text-[20px] font-bold">add</span>
+                  </button>
+
+                  <input id="query-input"
+                    class="flex-1 bg-transparent font-body-md text-sm text-white placeholder:text-slate-400 outline-none px-1 font-medium"
+                    placeholder="Ask a question about your uploaded notes..." type="text" />
+
+                  <!-- Mic button -->
+                  <button id="mic-btn"
+                    class="w-8 h-8 rounded-xl bg-[#2A2A32] hover:bg-[#383842] text-slate-300 hover:text-white flex items-center justify-center transition-colors shadow-xs shrink-0 cursor-pointer border border-[#484854]"
+                    title="Voice Input">
+                    <span class="material-symbols-outlined text-[18px]" id="mic-icon">mic</span>
+                  </button>
+
+                  <!-- Send button -->
+                  <button id="send-btn"
+                    class="w-8 h-8 rounded-xl bg-[#2563eb] hover:bg-[#3b82f6] text-white flex items-center justify-center transition-all shrink-0 disabled:opacity-50 cursor-pointer"
+                    title="Send query">
+                    <span class="material-symbols-outlined text-[17px]">send</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Continuous Learning Modal (Crisp Overlay - No Blur) -->
+  <div id="learning-modal" class="fixed inset-0 z-50 bg-black/80 hidden flex items-center justify-center p-4">
+    <div
+      class="bg-[#1E1E24] rounded-2xl shadow-2xl max-w-2xl w-full border border-[#38383E] flex flex-col max-h-[85vh] overflow-hidden text-slate-100">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-[#38383E] flex items-center justify-between bg-[#161618]">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-emerald-400 text-[26px]">psychology</span>
+          <div>
+            <h2 class="font-headline-sm text-headline-sm text-white font-bold">Continuous Learning & User Preferences
+            </h2>
+            <p class="text-xs text-slate-300">How StudyRAG adapts and tunes its responses based on your likes, dislikes,
+              and opinions</p>
+          </div>
+        </div>
+        <button id="close-learning-btn"
+          class="w-8 h-8 rounded-full hover:bg-neutral-800 flex items-center justify-center text-slate-300 hover:text-white transition-colors cursor-pointer">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 overflow-y-auto flex-1 flex flex-col gap-5">
+        <!-- Stats Overview -->
+        <div class="grid grid-cols-3 gap-3">
+          <div class="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-600/60">
+            <span class="text-[11px] font-bold text-emerald-300 uppercase">Liked Answers</span>
+            <div id="learning-likes" class="text-2xl font-bold text-emerald-200 mt-1">0</div>
+            <p class="text-[10px] text-emerald-400 mt-0.5">Reinforced styles</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-rose-950/40 border border-rose-600/60">
+            <span class="text-[11px] font-bold text-rose-300 uppercase">Disliked Answers</span>
+            <div id="learning-dislikes" class="text-2xl font-bold text-rose-200 mt-1">0</div>
+            <p class="text-[10px] text-rose-400 mt-0.5">Corrected weaknesses</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-blue-950/40 border border-blue-600/60">
+            <span class="text-[11px] font-bold text-blue-300 uppercase">Satisfaction Rate</span>
+            <div id="learning-rate" class="text-2xl font-bold text-blue-200 mt-1">100%</div>
+            <p class="text-[10px] text-blue-400 mt-0.5">Based on feedback</p>
+          </div>
+        </div>
+
+        <!-- Active Learned Rules -->
+        <div class="flex flex-col gap-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Active Learned Response Rules</span>
+          <div id="learning-rules-list"
+            class="p-3 rounded-xl bg-[#161618] border border-[#38383E] flex flex-col gap-2 text-xs">
+            <span class="text-slate-300 italic">No custom rules yet. Like/dislike answers or leave quick opinions to
+              train your study assistant.</span>
+          </div>
+        </div>
+
+        <!-- Recent Opinions & Feedback -->
+        <div class="flex flex-col gap-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Recent Feedback Log</span>
+          <div id="learning-recent-list"
+            class="divide-y divide-[#38383E] border border-[#38383E] rounded-xl max-h-48 overflow-y-auto text-xs bg-[#161618]">
+            <div class="p-3 text-center text-slate-400 italic">No feedback entries yet.</div>
+          </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="flex items-center justify-between pt-2 border-t border-[#38383E]">
+          <span class="text-[11px] text-slate-300">Learned preferences dynamically inject into the AI prompt for
+            customized tutoring.</span>
+          <button id="clear-learning-btn"
+            class="px-3 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900/80 text-rose-200 text-xs font-bold border border-rose-600/60 transition-colors cursor-pointer">
+            Reset Learning Memory
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client JavaScript -->
+  <script src="/static/js/app.js?v=2.5"></script>
+</body>
+
+</html>
