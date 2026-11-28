@@ -668,11 +668,11 @@
                     <span class="material-symbols-outlined text-[18px]" id="mic-icon">mic</span>
                   </button>
 
-                  <!-- Send button -->
-                  <button id="send-btn"
-                    class="w-8 h-8 rounded-xl bg-[#2563eb] hover:bg-[#3b82f6] text-white flex items-center justify-center transition-all shrink-0 disabled:opacity-50 cursor-pointer"
-                    title="Send query">
-                    <span class="material-symbols-outlined text-[17px]">send</span>
+                  <!-- Send / Stop button -->
+                  <button id="send-btn" disabled
+                    class="w-8 h-8 rounded-xl bg-[#2A2A32] text-slate-500 border border-[#3E3E48] flex items-center justify-center transition-all shrink-0 cursor-not-allowed"
+                    title="Type a message to send">
+                    <span id="send-btn-icon" class="material-symbols-outlined text-[17px]">send</span>
                   </button>
                 </div>
               </div>
@@ -759,7 +759,7 @@
   </div>
 
   <!-- Client JavaScript -->
-  <script src="/static/js/app.js?v=2.9"></script>
+  <script src="/static/js/app.js?v=3.0"></script>
 </body>
 
 </html>

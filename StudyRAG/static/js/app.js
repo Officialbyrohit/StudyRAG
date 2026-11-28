@@ -69,6 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const quickToolsBar = document.getElementById("quick-tools-bar");
   const queryInput = document.getElementById("query-input");
   const sendBtn = document.getElementById("send-btn");
+  const sendBtnIcon = document.getElementById("send-btn-icon");
   const micBtn = document.getElementById("mic-btn");
   const micIcon = document.getElementById("mic-icon");
 
@@ -89,6 +90,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let speechRecognition = null;
   let isListening = false;
   let webSearchEnabled = localStorage.getItem("studyrag_web_search") === "true";
+  let isTaskRunning = false;
+  let activeTaskController = null;
+  let activeLoadingId = null;
 
   // Initialize
   initAuth();
@@ -98,6 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initDynamicFloatEffects();
   initVoiceInput();
   initLearningPreferences();
+  updateSendButtonState();
   loadDocuments();
 
   // Dynamic 3D float & subtle pointer-tilt effect for file cards and AI Tool buttons
@@ -540,6 +545,7 @@ document.addEventListener("DOMContentLoaded", () => {
           transcript += event.results[i][0].transcript;
         }
         if (queryInput) queryInput.value = transcript;
+        updateSendButtonState();
       };
 
       speechRecognition.onerror = (event) => {
@@ -584,6 +590,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (queryInput) {
       queryInput.placeholder = "Ask a question about your uploaded notes...";
     }
+    updateSendButtonState();
   }
 
   // ----------------------------------------------------
@@ -873,17 +880,88 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ----------------------------------------------------
+  // Send / Stop Button State & Task Abort Control
+  // ----------------------------------------------------
+  function updateSendButtonState() {
+    if (!sendBtn || !sendBtnIcon) return;
+
+    if (isTaskRunning) {
+      sendBtn.disabled = false;
+      sendBtn.className = "w-8 h-8 rounded-full bg-[#2563eb] hover:bg-[#3b82f6] text-white flex items-center justify-center transition-all shrink-0 cursor-pointer shadow-sm";
+      sendBtn.title = "Stop generating";
+      sendBtnIcon.innerText = "stop";
+      sendBtnIcon.style.fontVariationSettings = "'FILL' 1, 'wght' 500";
+      return;
+    }
+
+    const hasText = Boolean(queryInput && queryInput.value.trim().length > 0);
+    sendBtnIcon.innerText = "send";
+    sendBtnIcon.style.fontVariationSettings = "'FILL' 0, 'wght' 400";
+
+    if (hasText) {
+      sendBtn.disabled = false;
+      sendBtn.className = "w-8 h-8 rounded-xl bg-[#2563eb] hover:bg-[#3b82f6] text-white flex items-center justify-center transition-all shrink-0 cursor-pointer";
+      sendBtn.title = "Send query";
+    } else {
+      sendBtn.disabled = true;
+      sendBtn.className = "w-8 h-8 rounded-xl bg-[#2A2A32] text-slate-500 border border-[#3E3E48] flex items-center justify-center transition-all shrink-0 cursor-not-allowed";
+      sendBtn.title = "Type a message to send";
+    }
+  }
+
+  function beginRunningTask() {
+    const controller = new AbortController();
+    const loadingId = appendLoadingSkeleton();
+    isTaskRunning = true;
+    activeTaskController = controller;
+    activeLoadingId = loadingId;
+    updateSendButtonState();
+    return { controller, loadingId };
+  }
+
+  function endRunningTask(controller, loadingId) {
+    if (loadingId) removeElement(loadingId);
+    if (activeTaskController === controller) {
+      isTaskRunning = false;
+      activeTaskController = null;
+      activeLoadingId = null;
+      updateSendButtonState();
+    }
+  }
+
+  function stopCurrentTask() {
+    if (!isTaskRunning) return;
+    const ctrl = activeTaskController;
+    const lid = activeLoadingId;
+    isTaskRunning = false;
+    activeTaskController = null;
+    activeLoadingId = null;
+    if (lid) removeElement(lid);
+    if (ctrl) ctrl.abort();
+    updateSendButtonState();
+    appendSystemNotice("Generation stopped.");
+  }
+
+  // ----------------------------------------------------
   // Grounded Chat with t3 (Edit/Copy) & t8 (Citation Toggle) & Formatted Response
   // ----------------------------------------------------
-  sendBtn.addEventListener("click", handleSendQuery);
+  sendBtn.addEventListener("click", () => {
+    if (isTaskRunning) {
+      stopCurrentTask();
+      return;
+    }
+    handleSendQuery();
+  });
+  queryInput.addEventListener("input", updateSendButtonState);
   queryInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSendQuery();
+      if (!isTaskRunning) handleSendQuery();
     }
   });
 
   async function handleSendQuery() {
+    if (isTaskRunning) return;
     const query = queryInput.value.trim();
     if (!query) return;
 
@@ -897,8 +975,8 @@ document.addEventListener("DOMContentLoaded", () => {
     appendUserMessage(query);
     queryInput.value = "";
 
-    // Append Loading Skeleton
-    const loadingId = appendLoadingSkeleton();
+    // Start running task & switch button to Stop
+    const { controller, loadingId } = beginRunningTask();
 
     const savedUser = getSavedUser();
     const currentUserId = (savedUser && (savedUser.email || savedUser.name)) || "guest";
@@ -907,6 +985,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           query: query,
           active_docs: activeDocs,
@@ -916,7 +995,7 @@ document.addEventListener("DOMContentLoaded", () => {
         })
       });
       const data = await res.json();
-      removeElement(loadingId);
+      if (controller.signal.aborted) return;
 
       if (!res.ok) {
         appendAssistantError(data.detail || "Error generating response.");
@@ -926,8 +1005,10 @@ document.addEventListener("DOMContentLoaded", () => {
         appendAssistantMessage(data, query, activeDocs);
       }
     } catch (err) {
-      removeElement(loadingId);
+      if (err.name === "AbortError") return;
       appendAssistantError("Connection failed: " + err.message);
+    } finally {
+      endRunningTask(controller, loadingId);
     }
   }
 
@@ -1008,6 +1089,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const editBtn = wrapper.querySelector(".user-edit-btn");
     editBtn.addEventListener("click", () => {
       queryInput.value = text;
+      updateSendButtonState();
       queryInput.focus();
       queryInput.scrollIntoView({ behavior: "smooth" });
     });
@@ -1402,13 +1484,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Regenerate action: re-runs the query and updates this assistant message
     regenBtn.addEventListener("click", async () => {
-      if (!userQuery) return;
+      if (!userQuery || isTaskRunning) return;
       regenBtn.classList.add("animate-spin", "text-blue-600");
-      const loadingId = appendLoadingSkeleton();
+      const { controller, loadingId } = beginRunningTask();
       try {
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
           body: JSON.stringify({
             query: userQuery,
             active_docs: activeDocs.length > 0 ? activeDocs : getActiveDocNames(),
@@ -1417,7 +1500,7 @@ document.addEventListener("DOMContentLoaded", () => {
           })
         });
         const newData = await res.json();
-        removeElement(loadingId);
+        if (controller.signal.aborted) return;
         if (res.ok) {
           wrapper.remove();
           appendAssistantMessage(newData, userQuery, activeDocs);
@@ -1425,9 +1508,10 @@ document.addEventListener("DOMContentLoaded", () => {
           appendAssistantError(newData.detail || "Regeneration failed.");
         }
       } catch (err) {
-        removeElement(loadingId);
+        if (err.name === "AbortError") return;
         appendAssistantError("Regeneration failed: " + err.message);
       } finally {
+        endRunningTask(controller, loadingId);
         regenBtn.classList.remove("animate-spin", "text-blue-600");
       }
     });
@@ -1645,106 +1729,122 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function triggerSummarize() {
+    if (isTaskRunning) return;
     const docName = getSelectedDocForTool();
     if (!docName) {
       alert("Please upload and select a document to summarize.");
       return;
     }
-    const loadingId = appendLoadingSkeleton();
+    const { controller, loadingId } = beginRunningTask();
     try {
       const res = await fetch("/api/summary", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({ doc_name: docName, web_search: webSearchEnabled })
       });
       const data = await res.json();
-      removeElement(loadingId);
+      if (controller.signal.aborted) return;
       if (!res.ok) {
         appendAssistantError(data.detail || "Error generating summary.");
       } else {
         renderSummaryCard(data);
       }
     } catch (err) {
-      removeElement(loadingId);
+      if (err.name === "AbortError") return;
       appendAssistantError("Summarization failed: " + err.message);
+    } finally {
+      endRunningTask(controller, loadingId);
     }
   }
 
   async function triggerMCQ() {
+    if (isTaskRunning) return;
     const docName = getSelectedDocForTool();
     if (!docName) {
       alert("Please upload and select a document to generate MCQs.");
       return;
     }
-    const loadingId = appendLoadingSkeleton();
+    const { controller, loadingId } = beginRunningTask();
     try {
       const res = await fetch("/api/study/mcq", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({ doc_name: docName, count: 5, web_search: webSearchEnabled })
       });
       const data = await res.json();
-      removeElement(loadingId);
+      if (controller.signal.aborted) return;
       if (!res.ok || data.error) {
         appendAssistantError(data.detail || data.error || "Error generating MCQs.");
       } else {
         renderMCQCard(data);
       }
     } catch (err) {
-      removeElement(loadingId);
+      if (err.name === "AbortError") return;
       appendAssistantError("MCQ generation failed: " + err.message);
+    } finally {
+      endRunningTask(controller, loadingId);
     }
   }
 
   async function triggerFlashcards() {
+    if (isTaskRunning) return;
     const docName = getSelectedDocForTool();
     if (!docName) {
       alert("Please upload and select a document to generate flashcards.");
       return;
     }
-    const loadingId = appendLoadingSkeleton();
+    const { controller, loadingId } = beginRunningTask();
     try {
       const res = await fetch("/api/study/flashcards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({ doc_name: docName, count: 6, web_search: webSearchEnabled })
       });
       const data = await res.json();
-      removeElement(loadingId);
+      if (controller.signal.aborted) return;
       if (!res.ok || data.error) {
         appendAssistantError(data.detail || data.error || "Error generating flashcards.");
       } else {
         renderFlashcardsCard(data);
       }
     } catch (err) {
-      removeElement(loadingId);
+      if (err.name === "AbortError") return;
       appendAssistantError("Flashcards generation failed: " + err.message);
+    } finally {
+      endRunningTask(controller, loadingId);
     }
   }
 
   async function triggerCheatsheet() {
+    if (isTaskRunning) return;
     const docName = getSelectedDocForTool();
     if (!docName) {
       alert("Please upload and select a document to generate a cheat sheet.");
       return;
     }
-    const loadingId = appendLoadingSkeleton();
+    const { controller, loadingId } = beginRunningTask();
     try {
       const res = await fetch("/api/study/cheatsheet", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({ doc_name: docName, web_search: webSearchEnabled })
       });
       const data = await res.json();
-      removeElement(loadingId);
+      if (controller.signal.aborted) return;
       if (!res.ok || data.error) {
         appendAssistantError(data.detail || data.error || "Error generating cheat sheet.");
       } else {
         renderCheatsheetCard(data);
       }
     } catch (err) {
-      removeElement(loadingId);
+      if (err.name === "AbortError") return;
       appendAssistantError("Cheat sheet generation failed: " + err.message);
+    } finally {
+      endRunningTask(controller, loadingId);
     }
   }
 
