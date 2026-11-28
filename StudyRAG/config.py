@@ -24,6 +24,16 @@ VECTOR_SIZE = 3072  # Dimension for gemini-embedding-001
 LLM_MODEL = "gemini-3.5-flash"
 FALLBACK_LLM_MODEL = "gemini-3.6-flash"
 
+# Task-Specific Gemini Model Sequences & Retry/Timeout Policy
+CHAT_MODELS = ["gemini-3.5-flash-lite", "gemini-3.5-flash"]
+SUMMARY_MODELS = ["gemini-3.5-flash", "gemini-3.6-flash", "gemini-3.7-flash"]
+FLASHCARDS_MODELS = ["gemini-3.5-flash-lite", "gemini-3.5-flash"]
+MCQ_MODELS = ["gemini-3.5-flash", "gemini-3.6-flash", "gemini-3.7-flash"]
+CHEATSHEET_MODELS = ["gemini-3.5-flash", "gemini-3.6-flash", "gemini-3.7-flash"]
+GEMINI_MAX_RETRIES_PER_MODEL = 1
+GEMINI_TIMEOUT_MS = 30000
+EMBEDDING_TIMEOUT_MS = 15000
+
 # Ingestion settings
 CHUNK_SIZE = 700
 CHUNK_OVERLAP = 120

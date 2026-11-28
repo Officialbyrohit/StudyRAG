@@ -2,9 +2,10 @@ import logging
 import os
 import json
 import re
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import config
 from core.vector_store import vector_store
+from core.gemini_helper import build_genai_client, run_with_model_fallback
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ def get_genai_client():
         raise ValueError("GEMINI_API_KEY is not set.")
     
     if _NEW_GENAI:
-        return genai.Client(api_key=api_key)
+        return build_genai_client(genai, types, api_key)
     else:
         genai_legacy.configure(api_key=api_key)
         return genai_legacy
@@ -83,31 +84,38 @@ def _normalize_external_info(
 
 
 class StudyToolsService:
-    def _call_gemini_json(self, prompt: str) -> Dict[str, Any]:
+    def _call_gemini_json(self, prompt: str, models: Optional[List[str]] = None) -> Dict[str, Any]:
         client = get_genai_client()
-        try:
+        model_sequence = models or config.MCQ_MODELS
+
+        def _call_json(model_name: str) -> Dict[str, Any]:
             if _NEW_GENAI:
                 res = client.models.generate_content(
-                    model=config.LLM_MODEL,
+                    model=model_name,
                     contents=prompt,
                     config=types.GenerateContentConfig(
                         temperature=0.2,
                         response_mime_type="application/json"
                     )
                 )
-                raw_text = res.text
+                raw_text = res.text or ""
             else:
-                model = genai_legacy.GenerativeModel(model_name=config.LLM_MODEL)
+                model = genai_legacy.GenerativeModel(model_name=model_name)
                 res = model.generate_content(
                     prompt,
                     generation_config={"temperature": 0.2, "response_mime_type": "application/json"}
                 )
-                raw_text = res.text
+                raw_text = res.text or ""
 
             clean_text = _clean_json_response(raw_text)
+            if not clean_text:
+                raise ValueError("Empty response from model")
             return json.loads(clean_text)
+
+        try:
+            return run_with_model_fallback(model_sequence, _call_json)
         except Exception as e:
-            logger.error(f"Error calling Gemini JSON: {e}")
+            logger.error(f"Error calling Gemini JSON across models {model_sequence}: {e}")
             raise e
 
     def generate_mcqs(self, doc_name: str, count: int = 5, web_search: bool = False) -> Dict[str, Any]:
@@ -171,7 +179,7 @@ Respond in strictly valid JSON with the following structure:
 OUTPUT ONLY RAW JSON.
 """
         try:
-            result = self._call_gemini_json(prompt)
+            result = self._call_gemini_json(prompt, models=config.MCQ_MODELS)
             result["doc_name"] = doc_name
             return _normalize_external_info(
                 result,
@@ -237,7 +245,7 @@ Respond in strictly valid JSON with the following structure:
 OUTPUT ONLY RAW JSON.
 """
         try:
-            result = self._call_gemini_json(prompt)
+            result = self._call_gemini_json(prompt, models=config.FLASHCARDS_MODELS)
             result["doc_name"] = doc_name
             return _normalize_external_info(
                 result,
@@ -307,7 +315,7 @@ Respond in strictly valid JSON with the following structure:
 OUTPUT ONLY RAW JSON.
 """
         try:
-            result = self._call_gemini_json(prompt)
+            result = self._call_gemini_json(prompt, models=config.CHEATSHEET_MODELS)
             result["doc_name"] = doc_name
             return _normalize_external_info(
                 result,

@@ -5,6 +5,7 @@ from typing import List, Dict, Any, Tuple
 from pathlib import Path
 import config
 from core.vector_store import vector_store
+from core.gemini_helper import build_genai_client, run_with_model_fallback
 
 try:
     from google import genai
@@ -22,14 +23,14 @@ def get_embedding_client():
         raise ValueError("GEMINI_API_KEY is not set. Please set it in .env or environment.")
     
     if _NEW_GENAI:
-        return genai.Client(api_key=api_key)
+        return build_genai_client(genai, types, api_key, timeout_ms=config.EMBEDDING_TIMEOUT_MS)
     else:
         genai_legacy.configure(api_key=api_key)
         return genai_legacy
 
 
 def embed_texts(texts: List[str]) -> List[List[float]]:
-    """Embed a list of text strings using Gemini text-embedding-004 API."""
+    """Embed a list of text strings using Gemini embedding model (retry same model only)."""
     if not texts:
         return []
 
@@ -40,44 +41,48 @@ def embed_texts(texts: List[str]) -> List[List[float]]:
     batch_size = 16
     for i in range(0, len(texts), batch_size):
         batch = texts[i:i + batch_size]
-        if _NEW_GENAI:
-            # Using google-genai SDK
-            response = client.models.embed_content(
-                model=config.EMBEDDING_MODEL,
-                contents=batch
-            )
-            # Response has embeddings list
-            for emb in response.embeddings:
-                embeddings.append(emb.values)
-        else:
-            # Fallback to google-generativeai
+
+        def _embed_batch(model_name: str):
+            if _NEW_GENAI:
+                response = client.models.embed_content(
+                    model=model_name,
+                    contents=batch
+                )
+                return [emb.values for emb in response.embeddings]
+            batch_vecs = []
             for text in batch:
                 res = genai_legacy.embed_content(
-                    model=config.EMBEDDING_MODEL,
+                    model=model_name,
                     content=text,
                     task_type="retrieval_document"
                 )
-                embeddings.append(res['embedding'])
+                batch_vecs.append(res['embedding'])
+            return batch_vecs
+
+        embeddings.extend(run_with_model_fallback([config.EMBEDDING_MODEL], _embed_batch))
 
     return embeddings
 
 
 def embed_query(query: str) -> List[float]:
-    """Embed a single search query using Gemini text-embedding-004."""
+    """Embed a single search query using Gemini embedding model (retry same model only)."""
     client = get_embedding_client()
-    if _NEW_GENAI:
-        response = client.models.embed_content(
-            model=config.EMBEDDING_MODEL,
-            contents=[query]
-        )
-        return response.embeddings[0].values
-    else:
+
+    def _embed_single(model_name: str):
+        if _NEW_GENAI:
+            response = client.models.embed_content(
+                model=model_name,
+                contents=[query]
+            )
+            return response.embeddings[0].values
         res = genai_legacy.embed_content(
-            model=config.EMBEDDING_MODEL,
+            model=model_name,
             content=query,
             task_type="retrieval_query"
         )
         return res['embedding']
+
+    return run_with_model_fallback([config.EMBEDDING_MODEL], _embed_single)
 
 
 def split_text_into_chunks(text: str, chunk_size: int = config.CHUNK_SIZE, overlap: int = config.CHUNK_OVERLAP) -> List[str]:

@@ -4,6 +4,7 @@ import json
 from typing import Dict, Any
 import config
 from core.vector_store import vector_store
+from core.gemini_helper import build_genai_client, run_with_model_fallback
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ def get_genai_client():
         raise ValueError("GEMINI_API_KEY is not set.")
     
     if _NEW_GENAI:
-        return genai.Client(api_key=api_key)
+        return build_genai_client(genai, types, api_key)
     else:
         genai_legacy.configure(api_key=api_key)
         return genai_legacy
@@ -71,59 +72,54 @@ OUTPUT ONLY THE JSON OBJECT. No preamble, no backticks, just raw valid JSON.
 """
 
         client = get_genai_client()
-        models_to_try = list(dict.fromkeys([
-            config.LLM_MODEL,
-            config.FALLBACK_LLM_MODEL,
-            "gemini-3.7-flash",
-            "gemini-3.5-flash-lite"
-        ]))
-        last_error = None
 
-        for model_name in models_to_try:
-            try:
-                if _NEW_GENAI:
-                    res = client.models.generate_content(
-                        model=model_name,
-                        contents=prompt,
-                        config=types.GenerateContentConfig(
-                            temperature=0.2,
-                            response_mime_type="application/json"
-                        )
+        def _call_summary(model_name: str) -> Dict[str, Any]:
+            if _NEW_GENAI:
+                res = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        temperature=0.2,
+                        response_mime_type="application/json"
                     )
-                    response_text = res.text.strip()
-                else:
-                    model = genai_legacy.GenerativeModel(model_name=model_name)
-                    res = model.generate_content(
-                        prompt,
-                        generation_config={"temperature": 0.2, "response_mime_type": "application/json"}
-                    )
-                    response_text = res.text.strip()
+                )
+                response_text = (res.text or "").strip()
+            else:
+                model = genai_legacy.GenerativeModel(model_name=model_name)
+                res = model.generate_content(
+                    prompt,
+                    generation_config={"temperature": 0.2, "response_mime_type": "application/json"}
+                )
+                response_text = (res.text or "").strip()
 
-                if response_text.startswith("```"):
-                    response_text = response_text.strip("`")
-                    if response_text.lower().startswith("json"):
-                        response_text = response_text[4:].strip()
+            if not response_text:
+                raise ValueError("Empty response from model")
 
-                data = json.loads(response_text)
-                data["doc_name"] = doc_name
-                if not web_search:
-                    data["used_external_info"] = False
-                    data["external_info_notice"] = ""
-                else:
-                    used_ext = bool(data.get("used_external_info", False))
-                    notice = (data.get("external_info_notice") or "").strip()
-                    if notice and not used_ext:
-                        used_ext = True
-                    if used_ext and not notice:
-                        notice = "External information from outside your uploaded file was used to explain or expand topics not fully detailed in the document."
-                    data["used_external_info"] = used_ext
-                    data["external_info_notice"] = notice
-                return data
-            except Exception as e:
-                last_error = e
-                logger.warning(f"Summary generation failed with {model_name}: {e}")
+            if response_text.startswith("```"):
+                response_text = response_text.strip("`")
+                if response_text.lower().startswith("json"):
+                    response_text = response_text[4:].strip()
 
-        logger.error(f"Error generating JSON summary across all models: {last_error}")
+            data = json.loads(response_text)
+            data["doc_name"] = doc_name
+            if not web_search:
+                data["used_external_info"] = False
+                data["external_info_notice"] = ""
+            else:
+                used_ext = bool(data.get("used_external_info", False))
+                notice = (data.get("external_info_notice") or "").strip()
+                if notice and not used_ext:
+                    used_ext = True
+                if used_ext and not notice:
+                    notice = "External information from outside your uploaded file was used to explain or expand topics not fully detailed in the document."
+                data["used_external_info"] = used_ext
+                data["external_info_notice"] = notice
+            return data
+
+        try:
+            return run_with_model_fallback(config.SUMMARY_MODELS, _call_summary)
+        except Exception as last_error:
+            logger.error(f"Error generating JSON summary across all models: {last_error}")
         return {
             "doc_name": doc_name,
             "title": f"Summary: {doc_name}",

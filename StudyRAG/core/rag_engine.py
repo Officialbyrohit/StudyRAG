@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import re
@@ -9,6 +10,7 @@ import config
 from core.vector_store import vector_store
 from core.ingestion import embed_query
 from core.feedback_memory import feedback_memory
+from core.gemini_helper import build_genai_client, run_with_model_fallback
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +29,7 @@ def get_genai_client():
         raise ValueError("GEMINI_API_KEY is not set. Please set it in .env or environment.")
     
     if _NEW_GENAI:
-        return genai.Client(api_key=api_key)
+        return build_genai_client(genai, types, api_key)
     else:
         genai_legacy.configure(api_key=api_key)
         return genai_legacy
@@ -173,6 +175,85 @@ class RAGEngine:
                 lines.append(f"{role}: {content[:600]}")
         return "\n".join(lines)
 
+    def _classify_and_reply_simple_chat(
+        self,
+        query: str,
+        history: Optional[List[Dict[str, str]]] = None,
+        active_docs: Optional[List[str]] = None,
+    ) -> Optional[str]:
+        """
+        Let the chat model decide whether the message is casual/simple chat (answered without
+        searching files or web) or a real study/factual/research query that needs search.
+        Returns a natural reply string for simple chat, or None when search is needed.
+        """
+        recent_history = self._format_history(history[-4:] if history else None)
+        docs_label = ", ".join(active_docs) if active_docs else "None selected"
+
+        router_prompt = (
+            "Decide whether the student's latest message is SIMPLE CHAT or needs SEARCH.\n\n"
+            "Return ONLY valid JSON in one of these two formats:\n"
+            '1) {"mode": "simple_chat", "reply": "<natural, friendly, concise reply>"}\n'
+            '2) {"mode": "search"}\n\n'
+            "Use \"simple_chat\" ONLY for:\n"
+            "- Greetings & small talk (e.g., hi, hii, hello, how are you, good morning)\n"
+            "- Personal introductions or remarks (e.g., i am rohit, my name is..., you know that)\n"
+            "- Brief acknowledgements (e.g., k, ok, okay, thanks, thank you, got it, cool)\n"
+            "- Casual banter about you as an assistant (e.g., who are you, what can you do, help)\n"
+            "- Light casual non-study chat that does NOT require looking up facts, definitions, formulas, notes, or web info\n\n"
+            "Use \"search\" for:\n"
+            "- ANY question about uploaded files, syllabus, units, topics, definitions, or formulas\n"
+            "- ANY factual, academic, coding, science, history, current-events, or research question (e.g., what is..., capital of..., how does... work, who is...)\n"
+            "- ANY follow-up asking for details, examples, or explanation of a study topic (e.g., more details, explain point 2, elaborate)\n\n"
+            "IMPORTANT for simple_chat reply: Use CONVERSATION HISTORY if helpful (for example remembering the student's name). "
+            "Do NOT use backticks (`), citations like [1], or mention external info.\n\n"
+            f"Active documents: {docs_label}\n"
+            + (f"Recent conversation:\n{recent_history}\n\n" if recent_history else "")
+            + f"Student message: {query}"
+        )
+
+        client = get_genai_client()
+
+        def _call_router(model_name: str) -> Dict[str, Any]:
+            if _NEW_GENAI:
+                res = client.models.generate_content(
+                    model=model_name,
+                    contents=router_prompt,
+                    config=types.GenerateContentConfig(
+                        temperature=0.1,
+                        response_mime_type="application/json",
+                    ),
+                )
+                raw = (res.text or "").strip()
+            else:
+                model = genai_legacy.GenerativeModel(model_name=model_name)
+                res = model.generate_content(
+                    router_prompt,
+                    generation_config={"temperature": 0.1, "response_mime_type": "application/json"},
+                )
+                raw = (res.text or "").strip()
+
+            if not raw:
+                raise ValueError("Empty response from router")
+            if raw.startswith("```"):
+                raw = raw.strip("`")
+                if raw.lower().startswith("json"):
+                    raw = raw[4:].strip()
+            return json.loads(raw)
+
+        try:
+            decision = run_with_model_fallback(config.CHAT_MODELS, _call_router)
+            if isinstance(decision, dict) and decision.get("mode") == "simple_chat":
+                reply = (decision.get("reply") or "").replace("`", "").strip()
+                if reply:
+                    return reply
+            return None
+        except Exception as e:
+            logger.warning(f"Simple chat classification failed, falling back: {e}")
+            greetings_regex = r"^(hi|hii+|hello|heyy*|hey|howdy|greetings|hola|namaste|good\s*(morning|afternoon|evening)|who\s*are\s*you|what\s*is\s*your\s*name|what\s*can\s*you\s*do|help|thanks|thank\s*you|ok|okay|k|kk)[\s\.\?!]*$"
+            if re.match(greetings_regex, query.strip().lower()):
+                return "Hello! I am your AI study assistant. How can I help you with your notes and documents today?"
+            return None
+
     def generate_grounded_answer(
         self,
         query: str,
@@ -182,20 +263,16 @@ class RAGEngine:
         web_search: bool = False
     ) -> Dict[str, Any]:
         """
-        Executes Hybrid Smart RAG retrieval and generation:
-        - Understands follow-ups using conversation history
-        - Grounds facts in uploaded documents with inline citations [1], [2]
-        - Optionally enables Google Web Search when web_search=True
-        - Uses AI knowledge to explain/expand topics from the notes & syllabus
-        - Only refuses when the query is genuinely unrelated to the notes and study session
+        Executes Smart RAG retrieval and generation:
+        - Model automatically decides if the message is simple chat (answered without searching files or web)
+        - Grounds study/factual answers in uploaded documents with inline citations [1], [2]
+        - Optionally uses live Web Search when web_search=True
         """
-        clean_q = query.strip().lower()
-
-        # Handle simple greetings and non-document conversational queries immediately with NO citations
-        greetings_regex = r"^(hi|hii+|hello|heyy*|hey|howdy|greetings|hola|namaste|good\s*(morning|afternoon|evening)|who\s*are\s*you|what\s*is\s*your\s*name|what\s*can\s*you\s*do|help|thanks|thank\s*you|ok|okay)[\s\.\?!]*$"
-        if re.match(greetings_regex, clean_q):
+        simple_reply = self._classify_and_reply_simple_chat(query, history=history, active_docs=active_docs)
+        if simple_reply is not None:
+            print(f"[SIMPLE CHAT] Query: '{query}' -> answered directly without file/web search")
             return {
-                "answer": "Hello! I am your AI study assistant. How can I help you with your notes and documents today?",
+                "answer": simple_reply,
                 "citations": [],
                 "is_refusal": False,
                 "used_external_info": False,
@@ -277,21 +354,14 @@ class RAGEngine:
                 "MANDATORY RULES:\n"
                 "1. NOTES FIRST & CITATIONS: Always check the provided DOCUMENT SOURCES and CONVERSATION HISTORY first. "
                 "Every fact taken from the document sources MUST include an inline citation like [1], [2], etc.\n"
-                "2. EXTERNAL / OUT-OF-FILES INFORMATION DISCLOSURE (STRICT): Whenever ANY part of your answer uses external information "
-                "or academic knowledge not literally written inside the provided DOCUMENT SOURCES (such as expanding a syllabus topic, "
-                "defining a term not defined in the file, adding examples, web search results, or supplying formulas outside the file), you MUST:\n"
-                "   a) Put [EXTERNAL_INFO_USED] on the very first line of your response.\n"
-                "   b) Explicitly tell the student in clear text that external information from outside their uploaded files was used "
-                "(for example: **External Information Used:** This response includes external information from outside your uploaded files.).\n"
-                "   c) Clearly separate what comes from the files vs external/web knowledge when both are present.\n"
-                "   If 100% of your answer comes strictly from DOCUMENT SOURCES, do NOT put [EXTERNAL_INFO_USED].\n"
-                "3. DEFINITIONS & FORMULAS: Keep definitions short and simple to understand. When formulas are relevant, write them in a simple, clear way and cover all relevant formulas for the topic.\n"
-                "4. FOLLOW-UPS & INTENT: Use CONVERSATION HISTORY to understand short follow-ups like 'more details', "
+                "2. DEFINITIONS & FORMULAS: Keep definitions short and simple to understand. When formulas are relevant, write them in a simple, clear way and cover all relevant formulas for the topic.\n"
+                "3. FOLLOW-UPS & INTENT: Use CONVERSATION HISTORY to understand short follow-ups like 'more details', "
                 "'explain point 2', 'give an example', or 'elaborate'. Never say you don't know to a valid follow-up about the notes.\n"
-                "5. WEB SEARCH ENABLED: Live Web Search results are provided below under LIVE WEB SEARCH RESULTS. "
+                "4. WEB SEARCH ENABLED: Live Web Search results are provided below under LIVE WEB SEARCH RESULTS. "
                 "Prioritize DOCUMENT SOURCES (with inline citations [1], [2]) if relevant, and use LIVE WEB SEARCH RESULTS "
                 "plus your verified knowledge to answer clearly and accurately. Do NOT output the document refusal message when Web Search is enabled.\n"
-                "6. CRITICAL: NEVER use backticks (`) anywhere in your output. Do NOT wrap words, phrases, or terms in backticks. Use normal text and **bold** for key terms.\n\n"
+                "5. CRITICAL: NEVER use backticks (`) anywhere in your output. Do NOT wrap words, phrases, or terms in backticks. Use normal text and **bold** for key terms. "
+                "Do NOT add any 'External Information Used' labels, tags, or disclaimers.\n\n"
                 "INTERACTIVE CHAT STYLE:\n"
                 "- Be warm, clear, and engaging like a great tutor so the student enjoys learning.\n"
                 "- Use **bold** for section headers and key concepts.\n"
@@ -336,7 +406,7 @@ class RAGEngine:
                 ]
                 web_context_section = "=== LIVE WEB SEARCH RESULTS ===\n" + "\n\n".join(web_blocks) + "\n\n"
             else:
-                web_context_section = "=== LIVE WEB SEARCH RESULTS ===\nNo instant web snippets returned; answer using verified general knowledge and mark as external information.\n\n"
+                web_context_section = "=== LIVE WEB SEARCH RESULTS ===\nNo instant web snippets returned; answer using verified general knowledge.\n\n"
 
         history_section = (
             f"=== CONVERSATION HISTORY ===\n{formatted_history}\n\n"
@@ -356,45 +426,40 @@ class RAGEngine:
             )
         )
 
-        # Step 5: Call Gemini API with multi-model fallback
+        # Step 5: Call Gemini API with multi-model fallback (max 1 retry per model)
         client = get_genai_client()
         response_text = ""
-        models_to_try = list(dict.fromkeys([
-            config.LLM_MODEL,
-            config.FALLBACK_LLM_MODEL,
-            "gemini-3.7-flash",
-            "gemini-3.5-flash-lite"
-        ]))
 
-        for idx_model, model_name in enumerate(models_to_try):
-            try:
-                if _NEW_GENAI:
-                    response = client.models.generate_content(
-                        model=model_name,
-                        contents=user_prompt,
-                        config=types.GenerateContentConfig(
-                            system_instruction=system_instruction,
-                            temperature=0.1,
-                        )
-                    )
-                    response_text = (response.text or "").strip()
-                else:
-                    model = genai_legacy.GenerativeModel(
-                        model_name=model_name,
+        def _call_chat(model_name: str) -> str:
+            if _NEW_GENAI:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=user_prompt,
+                    config=types.GenerateContentConfig(
                         system_instruction=system_instruction,
-                        generation_config={"temperature": 0.1}
+                        temperature=0.1,
                     )
-                    res = model.generate_content(user_prompt)
-                    response_text = res.text.strip()
-                break
-            except Exception as e:
-                logger.warning(f"Error calling {model_name}: {e}")
-                if idx_model == len(models_to_try) - 1:
-                    logger.error(f"All fallback models failed: {e}")
-                    response_text = self.refusal_message
+                )
+                text = (response.text or "").strip()
+            else:
+                model = genai_legacy.GenerativeModel(
+                    model_name=model_name,
+                    system_instruction=system_instruction,
+                    generation_config={"temperature": 0.1}
+                )
+                res = model.generate_content(user_prompt)
+                text = (res.text or "").strip()
+            if not text:
+                raise ValueError("Empty response from model")
+            return text
 
-        # Step 6: Post-process & verify refusal + external information disclosure
-        has_external_tag = "[EXTERNAL_INFO_USED]" in response_text
+        try:
+            response_text = run_with_model_fallback(config.CHAT_MODELS, _call_chat)
+        except Exception as e:
+            logger.error(f"All chat fallback models failed: {e}")
+            response_text = self.refusal_message
+
+        # Step 6: Post-process & verify refusal
         response_text = re.sub(r"\[EXTERNAL_INFO_USED\]\s*", "", response_text).strip()
 
         is_refusal = (
@@ -419,32 +484,12 @@ class RAGEngine:
             is_refusal = True
             active_citations = []
 
+        used_external_info = False
         if not web_search:
-            used_external_info = False
             web_search_used = False
             web_sources = []
         else:
-            has_external_phrase = bool(
-                re.search(
-                    r"\b(external information|web search|outside (?:your |the )?(?:uploaded )?files?|beyond (?:your |the )?(?:uploaded )?(?:notes|files|documents))\b",
-                    response_text,
-                    re.IGNORECASE
-                )
-            )
-            used_external_info = (not is_refusal) and (
-                has_external_tag or has_external_phrase or len(active_citations) == 0 or len(web_sources) > 0
-            )
-            web_search_used = (not is_refusal) and bool(
-                len(web_sources) > 0 or used_external_info
-            )
-
-            if used_external_info and not has_external_phrase:
-                notice_prefix = (
-                    "**External Information Used (Web Search):** Note — this response includes external information from live web search outside your uploaded files.\n\n"
-                    if web_search_used
-                    else "**External Information Used:** Note — this response includes external information from outside your uploaded files.\n\n"
-                )
-                response_text = notice_prefix + response_text
+            web_search_used = (not is_refusal) and bool(len(web_sources) > 0)
 
         return {
             "answer": response_text,

@@ -36,6 +36,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Document Management & Ingestion / Web Search Toggle
   const webSearchToggleBtn = document.getElementById("web-search-toggle-btn");
+  const webSearchIcon = document.getElementById("web-search-icon");
+  const webSearchTrack = document.getElementById("web-search-track");
+  const webSearchThumb = document.getElementById("web-search-thumb");
   const sidebarUploadBtn = document.getElementById("sidebar-upload-btn");
   const chatUploadBtn = document.getElementById("chat-upload-btn");
   const toggleCorpusBtn = document.getElementById("toggle-corpus-btn");
@@ -65,6 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Chat Canvas & Query Input
   const chatCanvas = document.getElementById("chat-canvas");
+  const scrollBottomBtn = document.getElementById("scroll-bottom-btn");
   const queryBarContainer = document.getElementById("query-bar-container");
   const quickToolsBar = document.getElementById("quick-tools-bar");
   const queryInput = document.getElementById("query-input");
@@ -100,6 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initCollapsiblePanels();
   initWebSearchToggle();
   initDynamicFloatEffects();
+  initScrollToBottom();
   initVoiceInput();
   initLearningPreferences();
   updateSendButtonState();
@@ -466,11 +471,19 @@ document.addEventListener("DOMContentLoaded", () => {
       const showTools = () => {
         quickToolsBar.classList.remove("max-h-0", "opacity-0", "-translate-y-1", "pointer-events-none");
         quickToolsBar.classList.add("max-h-12", "opacity-100", "translate-y-0", "pointer-events-auto");
+        if (scrollBottomBtn) {
+          scrollBottomBtn.classList.remove("bottom-[90px]");
+          scrollBottomBtn.classList.add("bottom-[128px]");
+        }
       };
       const hideTools = () => {
         if (document.activeElement !== queryInput) {
           quickToolsBar.classList.add("max-h-0", "opacity-0", "-translate-y-1", "pointer-events-none");
           quickToolsBar.classList.remove("max-h-12", "opacity-100", "translate-y-0", "pointer-events-auto");
+          if (scrollBottomBtn) {
+            scrollBottomBtn.classList.remove("bottom-[128px]");
+            scrollBottomBtn.classList.add("bottom-[90px]");
+          }
         }
       };
 
@@ -483,15 +496,66 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function initScrollToBottom() {
+    if (!chatCanvas || !scrollBottomBtn) return;
+
+    function updateScrollButtonVisibility() {
+      const distanceFromBottom = chatCanvas.scrollHeight - chatCanvas.scrollTop - chatCanvas.clientHeight;
+      const shouldShow = distanceFromBottom > 90;
+      scrollBottomBtn.setAttribute("aria-hidden", shouldShow ? "false" : "true");
+      if (shouldShow) {
+        scrollBottomBtn.classList.remove("opacity-0", "translate-y-2", "pointer-events-none");
+        scrollBottomBtn.classList.add("opacity-100", "translate-y-0", "pointer-events-auto");
+      } else {
+        scrollBottomBtn.classList.add("opacity-0", "translate-y-2", "pointer-events-none");
+        scrollBottomBtn.classList.remove("opacity-100", "translate-y-0", "pointer-events-auto");
+      }
+    }
+
+    chatCanvas.addEventListener("scroll", updateScrollButtonVisibility, { passive: true });
+    chatCanvas.addEventListener("transitionend", updateScrollButtonVisibility, { passive: true });
+    window.addEventListener("resize", updateScrollButtonVisibility, { passive: true });
+
+    const observer = new MutationObserver(() => {
+      requestAnimationFrame(updateScrollButtonVisibility);
+    });
+    observer.observe(chatCanvas, { childList: true, subtree: true });
+
+    scrollBottomBtn.addEventListener("click", () => {
+      chatCanvas.scrollTo({ top: chatCanvas.scrollHeight, behavior: "smooth" });
+    });
+
+    updateScrollButtonVisibility();
+  }
+
   function initWebSearchToggle() {
     if (!webSearchToggleBtn) return;
 
     function updateWebSearchUI() {
-      webSearchToggleBtn.setAttribute("aria-pressed", webSearchEnabled ? "true" : "false");
-      if (webSearchEnabled) {
-        webSearchToggleBtn.className = "flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400 font-label-meta text-xs font-bold transition-all cursor-pointer active:scale-95";
-      } else {
-        webSearchToggleBtn.className = "flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#27272A] hover:bg-[#323238] text-slate-300 border border-[#4B4B54] hover:border-slate-300/60 font-label-meta text-xs font-bold transition-all cursor-pointer active:scale-95";
+      const state = webSearchEnabled ? "true" : "false";
+      webSearchToggleBtn.setAttribute("aria-checked", state);
+      webSearchToggleBtn.setAttribute("aria-pressed", state);
+
+      if (webSearchTrack && webSearchThumb) {
+        if (webSearchEnabled) {
+          webSearchTrack.classList.remove("bg-[#4B4B54]");
+          webSearchTrack.classList.add("bg-emerald-600");
+          webSearchThumb.classList.remove("translate-x-[2px]");
+          webSearchThumb.classList.add("translate-x-[22px]");
+          if (webSearchIcon) {
+            webSearchIcon.classList.remove("text-slate-400");
+            webSearchIcon.classList.add("text-emerald-400");
+          }
+        } else {
+          webSearchTrack.classList.remove("bg-emerald-600");
+          webSearchTrack.classList.add("bg-[#4B4B54]");
+          webSearchThumb.classList.remove("translate-x-[22px]");
+          webSearchThumb.classList.add("translate-x-[2px]");
+          if (webSearchIcon) {
+            webSearchIcon.classList.remove("text-emerald-400");
+            webSearchIcon.classList.add("text-slate-400");
+          }
+        }
       }
     }
 
@@ -1113,14 +1177,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const id = "loading-" + Date.now();
     const skeleton = document.createElement("div");
     skeleton.id = id;
-    skeleton.className = "flex items-start gap-space-sm max-w-3xl mr-auto loading-pulse";
+    skeleton.className = "w-full max-w-3xl mx-auto mb-4";
     skeleton.innerHTML = `
-      <div class="w-8 h-8 rounded-xl bg-[#2563eb] text-white flex items-center justify-center shrink-0 border border-[#38383E]">
-        <span class="material-symbols-outlined text-[18px]">auto_awesome</span>
-      </div>
-      <div class="bg-[#1E1E24] p-space-md rounded-2xl rounded-tl-none shadow-md border border-[#38383E] text-xs text-slate-100 flex items-center gap-2 font-medium">
-        <span class="material-symbols-outlined animate-spin text-[16px] text-[#60a5fa]">sync</span>
-        <span>Searching sources and verifying citations...</span>
+      <div class="py-1 flex items-center">
+        <span class="thinking-shimmer font-body-md text-body-md font-medium select-none">Thinking...</span>
       </div>
     `;
     chatCanvas.appendChild(skeleton);
@@ -1139,9 +1199,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // Bold tags
     html = html.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold text-white">$1</strong>');
 
-    // Citations [1], [2] -> interactive badges
-    html = html.replace(/\[(\d+)\]/g, (match, p1) => {
-      return `<button class="citation-badge inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full font-label-meta text-label-meta bg-[#2563eb] text-white font-semibold align-baseline mx-0.5 shadow-sm hover:bg-[#3b82f6] transition-colors cursor-pointer" data-citation-id="${p1}">[${p1}]</button>`;
+    // Citations [1], [2], [1, 4] -> subtle low-distraction muted pills
+    html = html.replace(/\[(\d+(?:\s*,\s*\d+)*)\](?!\()/g, (match, group) => {
+      return group.split(',').map(num => {
+        const n = num.trim();
+        return `<button type="button" class="citation-badge inline-flex items-center justify-center px-1.5 py-[1px] rounded font-label-meta text-[11px] leading-tight bg-[#232329] hover:bg-[#303039] text-slate-400 hover:text-slate-100 border border-[#32323C] hover:border-[#484856] font-medium align-baseline mx-0.5 transition-colors cursor-pointer" data-citation-id="${n}" title="Open source ${n}">[${n}]</button>`;
+      }).join('');
     });
 
     // Lists (lines starting with * or - or •)
@@ -1156,7 +1219,7 @@ document.addEventListener("DOMContentLoaded", () => {
           formattedLines.push('<ul class="list-disc pl-5 space-y-1.5 my-2">');
           inList = true;
         }
-        formattedLines.push(`<li class="text-slate-200 leading-relaxed">${line.substring(2)}</li>`);
+        formattedLines.push(`<li class="text-[#e5e7eb] leading-relaxed">${line.substring(2)}</li>`);
       } else {
         if (inList) {
           formattedLines.push('</ul>');
@@ -1178,28 +1241,41 @@ document.addEventListener("DOMContentLoaded", () => {
     const formattedHtml = formatMarkdownResponse(answer);
 
     const wrapper = document.createElement("div");
-    wrapper.className = "assistant-msg-container flex items-start gap-space-sm max-w-3xl mr-auto mb-4 group";
+    wrapper.className = "assistant-msg-container w-full max-w-3xl mx-auto mb-6 group";
 
     let citationsBlock = "";
     if (citations && citations.length > 0 && !is_refusal) {
-      const chipHtml = citations.map(c => `
-        <button class="citation-chip flex items-center gap-space-xs px-2.5 py-1.5 rounded-lg bg-[#172554] text-[#93c5fd] font-semibold shadow-sm border border-[#2563eb] text-left transition-all hover:bg-[#1e3a8a] cursor-pointer group"
-          data-doc="${escapeHtml(c.doc_name)}" data-page="${c.page}" data-text="${escapeHtml(c.text)}" title="Open ${escapeHtml(c.doc_name)} (page ${c.page}) in new tab">
-          <span class="font-label-meta text-label-meta font-bold bg-[#2563eb] text-white px-1.5 py-0.5 rounded-full">${c.id}</span>
-          <span class="font-label-code text-label-code font-bold truncate max-w-[210px] text-white">${escapeHtml(c.doc_name)}</span>
-          <span class="font-label-meta text-label-meta text-slate-300 font-medium">(p. ${c.page})</span>
-          <span class="material-symbols-outlined text-[14px] text-slate-300 group-hover:text-white ml-0.5">open_in_new</span>
-        </button>
-      `).join("");
-
-      // Citations are collapsed by default with a clear toggle button
-      citationsBlock = `
-        <div class="mt-space-md pt-space-sm border-t border-[#38383E] flex flex-col gap-2">
-          <button class="toggle-citations-btn inline-flex items-center gap-1.5 text-xs font-bold text-[#60a5fa] hover:text-[#93c5fd] transition-colors self-start px-2 py-1 rounded hover:bg-[#25252c] cursor-pointer">
-            <span class="material-symbols-outlined text-[16px] transition-transform toggle-icon">expand_more</span>
-            <span class="toggle-text">Show Citations (${citations.length})</span>
+      const chipHtml = citations.map(c => {
+        const rawText = (c.text || "").replace(/\s+/g, " ").trim();
+        const snippet = rawText.length > 130 ? rawText.slice(0, 127) + "..." : rawText;
+        return `
+          <button type="button" class="citation-chip flex flex-col justify-between gap-1.5 p-3 rounded-xl bg-[#1C1C22] hover:bg-[#23232B] border border-[#2C2C35] hover:border-[#42424E] text-left transition-all cursor-pointer group w-full"
+            data-doc="${escapeHtml(c.doc_name)}" data-page="${c.page}" data-text="${escapeHtml(c.text)}" title="Open ${escapeHtml(c.doc_name)} (Page ${c.page}) in new tab">
+            <div class="flex items-center justify-between gap-2 w-full">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="w-5 h-5 rounded-md bg-[#272730] text-slate-300 border border-[#383844] flex items-center justify-center text-[10px] font-semibold shrink-0">${c.id}</span>
+                <span class="material-symbols-outlined text-[15px] text-rose-400/90 shrink-0">picture_as_pdf</span>
+                <span class="text-xs font-medium text-slate-100 truncate">${escapeHtml(c.doc_name)}</span>
+              </div>
+              <div class="flex items-center gap-1 shrink-0 text-[11px] text-slate-400">
+                <span>p. ${c.page}</span>
+                <span class="material-symbols-outlined text-[13px] opacity-60 group-hover:opacity-100 transition-opacity">open_in_new</span>
+              </div>
+            </div>
+            ${snippet ? `<p class="text-[11px] leading-relaxed text-slate-400 group-hover:text-slate-300 m-0" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escapeHtml(snippet)}</p>` : ''}
           </button>
-          <div class="citations-body flex flex-wrap items-center gap-space-xs">
+        `;
+      }).join("");
+
+      // Citations are collapsed by default with a clear neutral Sources toggle
+      citationsBlock = `
+        <div class="mt-4 pt-3 border-t border-[#27272E] flex flex-col gap-2.5">
+          <button type="button" class="toggle-citations-btn inline-flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors self-start px-2.5 py-1 rounded-lg bg-[#1C1C22] hover:bg-[#24242C] border border-[#2C2C35] cursor-pointer">
+            <span class="material-symbols-outlined text-[15px] text-slate-400">library_books</span>
+            <span class="toggle-text">Sources (${citations.length})</span>
+            <span class="material-symbols-outlined text-[15px] transition-transform toggle-icon">expand_more</span>
+          </button>
+          <div class="citations-body grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             ${chipHtml}
           </div>
         </div>
@@ -1213,18 +1289,11 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     ` : '';
 
-    const externalBadge = (!is_refusal && (used_external_info || web_search_used)) ? `
-      <div class="mb-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-950/70 text-amber-200 text-xs font-semibold border border-amber-500/60">
-        <span class="material-symbols-outlined text-[15px] text-amber-300">${web_search_used ? 'language' : 'public'}</span>
-        <span>${web_search_used ? 'Web Search & External Info Used (Outside Uploaded Files)' : 'External Information Used (Outside Uploaded Files)'}</span>
-      </div>
-    ` : '';
-
     let webSourcesBlock = "";
     if (!is_refusal && web_sources && web_sources.length > 0) {
       const webChips = web_sources.map(ws => `
         <a href="${escapeHtml(ws.uri)}" target="_blank" rel="noopener noreferrer"
-          class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#16161C] hover:bg-[#23232C] text-slate-100 border border-[#3E3E48] text-xs font-medium transition-colors"
+          class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#1C1C22] hover:bg-[#23232B] text-slate-200 border border-[#2C2C35] hover:border-[#42424E] text-xs font-medium transition-colors"
           title="${escapeHtml(ws.uri)}">
           <span class="material-symbols-outlined text-[14px] text-emerald-400">language</span>
           <span class="truncate max-w-[200px]">${escapeHtml(ws.title || ws.domain || "Web Source")}</span>
@@ -1232,22 +1301,18 @@ document.addEventListener("DOMContentLoaded", () => {
         </a>
       `).join("");
       webSourcesBlock = `
-        <div class="mt-3 pt-2.5 border-t border-[#38383E] flex flex-col gap-1.5">
-          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-300">Web Sources (${web_sources.length})</span>
+        <div class="mt-4 pt-3 border-t border-[#27272E] flex flex-col gap-1.5">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Web Sources (${web_sources.length})</span>
           <div class="flex flex-wrap gap-1.5">${webChips}</div>
         </div>
       `;
     }
 
     wrapper.innerHTML = `
-      <div class="w-8 h-8 rounded-xl ${is_refusal ? 'bg-[#ef4444]' : 'bg-[#2563eb]'} text-white flex items-center justify-center shrink-0 mt-0.5 border border-[#38383E]">
-        <span class="material-symbols-outlined text-[18px]">${is_refusal ? 'help_outline' : 'auto_awesome'}</span>
-      </div>
-      <div class="flex flex-col flex-1 min-w-0">
-        <div class="card-body bg-[#1E1E24] p-4 rounded-2xl rounded-tl-sm shadow-md border border-[#38383E]">
+      <div class="flex flex-col w-full min-w-0">
+        <div class="card-body py-1">
           ${refusalBadge}
-          ${externalBadge}
-          <div class="text-[#f1f5f9] space-y-2 leading-relaxed font-body-md text-body-md font-normal">
+          <div class="text-[#e5e7eb] space-y-2.5 leading-relaxed font-body-md text-body-md font-normal">
             ${formattedHtml}
           </div>
           ${webSourcesBlock}
@@ -1255,7 +1320,7 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
 
         <!-- Minimalist Action Bar: Copy, Speaker, Like, Dislike, Regenerate -->
-        <div class="ai-action-bar flex items-center gap-1.5 mt-1.5 pl-1 text-slate-300">
+        <div class="ai-action-bar flex items-center gap-1.5 mt-2.5 text-slate-400">
           <button type="button" class="btn-ai-copy hover:text-white p-1 rounded transition-colors cursor-pointer" title="Copy response">
             <span class="material-symbols-outlined text-[17px]">content_copy</span>
           </button>
@@ -1316,11 +1381,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (isExpanded) {
           citationsBody.classList.remove("expanded");
           toggleIcon.style.transform = "rotate(0deg)";
-          toggleText.innerText = `Show Citations (${citations.length})`;
+          toggleText.innerText = `Sources (${citations.length})`;
         } else {
           citationsBody.classList.add("expanded");
           toggleIcon.style.transform = "rotate(180deg)";
-          toggleText.innerText = "Hide Citations";
+          toggleText.innerText = "Hide Sources";
         }
       });
     }
@@ -1879,32 +1944,29 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     const keyPointsHtml = (key_points || []).map(pt => `
-      <li class="text-xs text-[#475569] dark-text-secondary leading-relaxed">${escapeHtml(pt)}</li>
+      <li class="text-sm text-[#e5e7eb] leading-relaxed">${escapeHtml(pt)}</li>
     `).join("");
 
     const card = document.createElement("div");
-    card.className = "flex items-start gap-space-sm max-w-3xl mr-auto w-full";
+    card.className = "flex flex-col w-full max-w-3xl mx-auto mb-6";
     card.innerHTML = `
-      <div class="w-8 h-8 rounded-full bg-[#0284c7] text-white flex items-center justify-center shrink-0 shadow-sm">
-        <span class="material-symbols-outlined text-[18px]">feed</span>
-      </div>
-      <div class="bg-white dark-bg-card rounded-xl p-space-md border border-[#cbd5e1] dark-border shadow-sm flex flex-col gap-space-sm flex-1">
-        <div class="flex items-center gap-space-xs">
-          <span class="material-symbols-outlined text-[18px] text-[#0284c7]">feed</span>
-          <span class="font-title-md text-title-md font-semibold text-[#0f172a] dark-text">${escapeHtml(title || "Document Summary")}</span>
+      <div class="summary-card-body bg-[#1A1A20] border border-[#30303A] rounded-[2px] p-5 flex flex-col gap-3">
+        <div class="flex items-center justify-between gap-2 pb-3 border-b border-[#27272E]">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="material-symbols-outlined text-[18px] text-[#60a5fa] shrink-0">feed</span>
+            <span class="font-title-md text-base font-semibold text-[#f8fafc] truncate">${escapeHtml(title || "Document Summary")}</span>
+          </div>
+          <span class="px-2 py-0.5 rounded-[2px] text-[11px] font-semibold bg-[#222634] text-blue-300 border border-blue-500/40 shrink-0">Summary</span>
         </div>
         ${externalBanner}
-        <p class="font-body-sm text-body-sm text-[#475569] dark-text-secondary leading-relaxed">
+        <p class="font-body-md text-body-md text-[#e5e7eb] leading-relaxed m-0">
           ${escapeHtml(executive_summary || "")}
         </p>
-        ${key_points && key_points.length > 0 ? `<ul class="list-disc pl-4 space-y-1">${keyPointsHtml}</ul>` : ''}
+        ${key_points && key_points.length > 0 ? `<ul class="list-disc pl-5 space-y-1.5 my-1">${keyPointsHtml}</ul>` : ''}
       </div>
     `;
 
-    const summaryCardBody = card.querySelector(".bg-white");
-    if (summaryCardBody) {
-      attachModelTrainingBar(summaryCardBody, `Summary of ${title}`, executive_summary || title, []);
-    }
+    attachModelTrainingBar(card, `Summary of ${title}`, executive_summary || title, []);
 
     chatCanvas.appendChild(card);
     chatCanvas.scrollTop = chatCanvas.scrollHeight;
@@ -1928,36 +1990,36 @@ document.addEventListener("DOMContentLoaded", () => {
       "Some questions, options, or explanations include external information from outside your uploaded file."
     );
     const card = document.createElement("div");
-    card.className = "flex items-start gap-space-sm max-w-3xl mr-auto w-full";
+    card.className = "flex flex-col w-full max-w-3xl mx-auto mb-6";
 
     const cardId = "mcq-deck-" + Date.now();
     const questionsList = (questions || []).map((q, qIndex) => {
       const qNum = qIndex + 1;
       const optionsHtml = Object.entries(q.options || {}).map(([key, val]) => `
-          <button type="button" data-key="${key}" data-correct="${escapeHtml(q.correct_answer)}" class="mcq-option text-left p-2.5 rounded-lg border border-slate-200 dark-border hover:bg-[#1e293b] hover:border-emerald-400/70 transition-colors flex items-center justify-between text-xs font-medium cursor-pointer">
+          <button type="button" data-key="${key}" data-correct="${escapeHtml(q.correct_answer)}" class="mcq-option text-left p-2.5 rounded-[2px] bg-[#1B1B22] border border-[#2E2E39] hover:bg-[#232734] hover:border-emerald-400/60 transition-colors flex items-center justify-between text-xs font-medium cursor-pointer">
             <span class="flex items-center gap-2">
-              <span class="w-5 h-5 rounded-full bg-slate-100 dark-bg-slate-700 text-slate-700 dark:text-slate-200 font-bold flex items-center justify-center text-[10px] shrink-0">${key}</span>
-              <span class="text-slate-800 dark-text">${escapeHtml(val)}</span>
+              <span class="w-5 h-5 rounded-[2px] bg-[#252530] text-slate-200 font-bold flex items-center justify-center text-[10px] shrink-0">${key}</span>
+              <span class="text-[#e5e7eb]">${escapeHtml(val)}</span>
             </span>
             <span class="option-icon material-symbols-outlined text-[16px] hidden"></span>
           </button>
         `).join("");
 
       return `
-          <div class="mcq-item p-3.5 rounded-xl bg-slate-50 dark-bg-surface border border-slate-200 dark-border flex flex-col gap-2.5" data-qid="${qNum}">
+          <div class="mcq-item p-4 rounded-[2px] bg-[#141418] border border-[#282832] flex flex-col gap-3" data-qid="${qNum}">
             <div class="flex items-start justify-between gap-2">
-              <span class="font-semibold text-xs text-slate-900 dark-text leading-relaxed">
-                <span class="text-emerald-700 dark:text-emerald-400 font-bold mr-1">Q${qNum}.</span> ${escapeHtml(q.question)}
+              <span class="font-semibold text-sm text-[#f8fafc] leading-relaxed">
+                <span class="text-emerald-400 font-bold mr-1">Q${qNum}.</span> ${escapeHtml(q.question)}
               </span>
               <div class="flex items-center gap-1.5 shrink-0">
-                ${q.uses_external_info ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950/70 text-amber-200 border border-amber-500/60 shrink-0" title="Uses knowledge outside your uploaded file">External Info</span>` : ''}
-                ${q.topic ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/10 text-white border border-white/75 shrink-0">${escapeHtml(q.topic)}</span>` : ''}
+                ${q.uses_external_info ? `<span class="px-2 py-0.5 rounded-[2px] text-[10px] font-semibold bg-amber-950/70 text-amber-200 border border-amber-500/60 shrink-0" title="Uses knowledge outside your uploaded file">External Info</span>` : ''}
+                ${q.topic ? `<span class="px-2 py-0.5 rounded-[2px] text-[10px] font-semibold bg-white/10 text-white border border-white/75 shrink-0">${escapeHtml(q.topic)}</span>` : ''}
               </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 options-container">
               ${optionsHtml}
             </div>
-            <div class="explanation-box hidden p-2.5 rounded-lg bg-[#27272F] border border-[#4B4B54] text-xs text-white leading-relaxed">
+            <div class="explanation-box hidden p-3 rounded-[2px] bg-[#27272F] border border-[#4B4B54] text-xs text-white leading-relaxed">
               <span class="font-bold text-white">Explanation:</span> ${escapeHtml(q.explanation || "Correct answer from source material.")}
               ${q.uses_external_info ? `<span class="block mt-1 text-[11px] font-semibold text-amber-300">Note: This question/explanation uses external information outside your uploaded file.</span>` : ''}
             </div>
@@ -1966,19 +2028,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }).join("");
 
     card.innerHTML = `
-        <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-          <span class="material-symbols-outlined text-[18px]">quiz</span>
-        </div>
-        <div id="${cardId}" class="bg-white dark-bg-card rounded-xl p-space-md border border-[#cbd5e1] dark-border shadow-sm flex flex-col gap-3 flex-1 w-full">
-          <div class="flex items-center justify-between border-b border-slate-100 dark-border pb-2">
-            <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-[20px] text-emerald-600">assignment</span>
-              <div>
-                <span class="font-title-md text-title-md font-bold text-[#0f172a] dark-text">${escapeHtml(title || "Practice Quiz")}</span>
-                <span class="text-[11px] text-slate-400 dark-text-muted block">Source: ${escapeHtml(doc_name)} · Instant Answer Feedback</span>
+        <div id="${cardId}" class="bg-[#1A1A20] border border-[#30303A] rounded-[2px] p-5 flex flex-col gap-4 w-full">
+          <div class="flex items-center justify-between border-b border-[#27272E] pb-3">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="material-symbols-outlined text-[20px] text-emerald-400 shrink-0">quiz</span>
+              <div class="min-w-0">
+                <span class="font-title-md text-base font-semibold text-[#f8fafc] truncate block">${escapeHtml(title || "Practice Quiz")}</span>
+                <span class="text-[11px] text-slate-400 block truncate">Source: ${escapeHtml(doc_name)} · Instant Answer Feedback</span>
               </div>
             </div>
-            <span class="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-200">
+            <span class="text-xs font-semibold text-emerald-300 bg-[#182622] px-2.5 py-1 rounded-[2px] border border-emerald-500/40 shrink-0">
               ${(questions || []).length} Questions
             </span>
           </div>
@@ -2007,7 +2066,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const correctKey = opt.getAttribute("data-correct");
 
             options.forEach(o => {
-              o.classList.remove("hover:bg-[#1e293b]", "hover:border-emerald-400/70", "cursor-pointer");
+              o.classList.remove("hover:bg-[#232734]", "hover:border-emerald-400/60", "cursor-pointer");
               o.disabled = true;
               const key = o.getAttribute("data-key");
               const icon = o.querySelector(".option-icon");
@@ -2051,23 +2110,20 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     const card = document.createElement("div");
-    card.className = "flex items-start gap-space-sm max-w-3xl mr-auto w-full";
+    card.className = "flex flex-col w-full max-w-3xl mx-auto mb-6";
     const cardId = "flashcard-deck-" + Date.now();
 
     card.innerHTML = `
-        <div class="w-8 h-8 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center shrink-0 shadow-sm font-bold">
-          <span class="material-symbols-outlined text-[18px]">style</span>
-        </div>
-        <div id="${cardId}" class="bg-white dark-bg-card rounded-xl p-space-md border border-[#cbd5e1] dark-border shadow-sm flex flex-col gap-3 flex-1 w-full">
-          <div class="flex items-center justify-between border-b border-[#38383E] pb-2">
-            <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-[20px] text-amber-400">style</span>
-              <div>
-                <span class="font-title-md text-title-md font-bold text-[#f8fafc]">${escapeHtml(title || "Flashcard Deck")}</span>
-                <span class="text-[11px] text-slate-300 block">Source: ${escapeHtml(doc_name)} · Active Recall</span>
+        <div id="${cardId}" class="bg-[#1A1A20] border border-[#30303A] rounded-[2px] p-5 flex flex-col gap-3.5 w-full">
+          <div class="flex items-center justify-between border-b border-[#27272E] pb-3">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="material-symbols-outlined text-[20px] text-amber-400 shrink-0">style</span>
+              <div class="min-w-0">
+                <span class="font-title-md text-base font-semibold text-[#f8fafc] truncate block">${escapeHtml(title || "Flashcard Deck")}</span>
+                <span class="text-[11px] text-slate-400 block truncate">Source: ${escapeHtml(doc_name)} · Active Recall</span>
               </div>
             </div>
-            <span class="text-xs font-bold text-amber-200 bg-[#271C08] px-2.5 py-1 rounded-lg border border-amber-400/60 deck-counter">
+            <span class="text-xs font-semibold text-amber-200 bg-[#261E10] px-2.5 py-1 rounded-[2px] border border-amber-400/50 deck-counter shrink-0">
               Card 1 of ${flashcards.length}
             </span>
           </div>
@@ -2075,13 +2131,13 @@ document.addEventListener("DOMContentLoaded", () => {
           ${externalBanner}
 
           <!-- Flashcard Card Face (High Contrast) -->
-          <div class="flashcard-face min-h-[150px] p-5 rounded-xl bg-[#0F1117] border-2 border-amber-400/70 flex flex-col justify-between cursor-pointer transition-all hover:bg-[#151822] hover:border-amber-300 hover:shadow-lg select-none">
+          <div class="flashcard-face min-h-[150px] p-5 rounded-[2px] bg-[#121319] border border-amber-400/70 flex flex-col justify-between cursor-pointer transition-all hover:bg-[#171A23] hover:border-amber-300 select-none">
             <div class="flex items-center justify-between gap-2">
               <div class="flex items-center gap-2">
                 <span class="text-[11px] uppercase font-bold tracking-wider text-amber-300 fc-tag">Prompt</span>
-                <span class="fc-external-badge hidden px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950 text-amber-200 border border-amber-400/60">External Info (Outside File)</span>
+                <span class="fc-external-badge hidden px-2 py-0.5 rounded-[2px] text-[10px] font-semibold bg-amber-950 text-amber-200 border border-amber-400/60">External Info (Outside File)</span>
               </div>
-              <span class="text-[11px] text-slate-200 font-medium flex items-center gap-1">
+              <span class="text-[11px] text-slate-300 font-medium flex items-center gap-1">
                 <span class="material-symbols-outlined text-[14px]">touch_app</span> Click to Flip
               </span>
             </div>
@@ -2093,13 +2149,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
           <!-- Navigation Controls -->
           <div class="flex items-center justify-between pt-1">
-            <button class="fc-prev px-3.5 py-1.5 rounded-lg bg-[#16161C] border border-[#4B4B54] text-slate-100 hover:bg-[#262630] hover:border-amber-400/60 hover:text-white text-xs font-semibold flex items-center gap-1 disabled:opacity-40 disabled:hover:bg-[#16161C] disabled:hover:border-[#4B4B54] cursor-pointer disabled:cursor-not-allowed transition-colors">
+            <button class="fc-prev px-3.5 py-1.5 rounded-[2px] bg-[#141418] border border-[#383842] text-slate-100 hover:bg-[#23232D] hover:border-amber-400/60 hover:text-white text-xs font-semibold flex items-center gap-1 disabled:opacity-40 disabled:hover:bg-[#141418] disabled:hover:border-[#383842] cursor-pointer disabled:cursor-not-allowed transition-colors">
               <span class="material-symbols-outlined text-[16px]">arrow_back</span> Prev
             </button>
-            <button class="fc-flip px-4 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold flex items-center gap-1 shadow-sm cursor-pointer transition-colors">
+            <button class="fc-flip px-4 py-1.5 rounded-[2px] bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold flex items-center gap-1 shadow-sm cursor-pointer transition-colors">
               <span class="material-symbols-outlined text-[16px]">sync</span> Flip Card
             </button>
-            <button class="fc-next px-3.5 py-1.5 rounded-lg bg-[#16161C] border border-[#4B4B54] text-slate-100 hover:bg-[#262630] hover:border-amber-400/60 hover:text-white text-xs font-semibold flex items-center gap-1 disabled:opacity-40 disabled:hover:bg-[#16161C] disabled:hover:border-[#4B4B54] cursor-pointer disabled:cursor-not-allowed transition-colors">
+            <button class="fc-next px-3.5 py-1.5 rounded-[2px] bg-[#141418] border border-[#383842] text-slate-100 hover:bg-[#23232D] hover:border-amber-400/60 hover:text-white text-xs font-semibold flex items-center gap-1 disabled:opacity-40 disabled:hover:bg-[#141418] disabled:hover:border-[#383842] cursor-pointer disabled:cursor-not-allowed transition-colors">
               Next <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
             </button>
           </div>
@@ -2135,7 +2191,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (!isFlipped) {
-        face.className = "flashcard-face min-h-[150px] p-5 rounded-xl bg-[#0F1117] border-2 border-amber-400/70 flex flex-col justify-between cursor-pointer transition-all hover:bg-[#151822] hover:border-amber-300 hover:shadow-lg select-none";
+        face.className = "flashcard-face min-h-[150px] p-5 rounded-[2px] bg-[#121319] border border-amber-400/70 flex flex-col justify-between cursor-pointer transition-all hover:bg-[#171A23] hover:border-amber-300 select-none";
         tag.innerText = item.tag || "Prompt / Question";
         tag.className = "text-[11px] uppercase font-bold tracking-wider text-amber-300 fc-tag";
         content.innerText = item.front;
@@ -2143,7 +2199,7 @@ document.addEventListener("DOMContentLoaded", () => {
         hint.innerText = "Tap card or click Flip to reveal answer";
         hint.className = "text-[11px] font-semibold text-amber-300 fc-hint";
       } else {
-        face.className = "flashcard-face min-h-[150px] p-5 rounded-xl bg-[#0A1F17] border-2 border-emerald-400/75 flex flex-col justify-between cursor-pointer transition-all hover:bg-[#0E291F] hover:border-emerald-300 hover:shadow-lg select-none";
+        face.className = "flashcard-face min-h-[150px] p-5 rounded-[2px] bg-[#0C2118] border border-emerald-400/75 flex flex-col justify-between cursor-pointer transition-all hover:bg-[#102B20] hover:border-emerald-300 select-none";
         tag.innerText = "Answer / Solution";
         tag.className = "text-[11px] uppercase font-bold tracking-wider text-emerald-300 fc-tag";
         content.innerText = item.back;
@@ -2186,31 +2242,31 @@ document.addEventListener("DOMContentLoaded", () => {
     const showExternalNotice = Boolean(used_external_info || anyItemExternal || (external_info_notice || "").trim());
 
     const card = document.createElement("div");
-    card.className = "flex items-start gap-space-sm max-w-3xl mr-auto w-full";
+    card.className = "flex flex-col w-full max-w-3xl mx-auto mb-6";
 
-    // Strict 3-color Cheat Sheet palette: Charcoal (#1E1E24 / #111116), White/Slate (#f8fafc / #cbd5e1), Purple (#a78bfa / #7c3aed)
+    // Strict 3-color Cheat Sheet palette in Section 1 rectangular card layout
     const externalBannerHtml = showExternalNotice ? `
-        <div class="p-2.5 rounded-lg bg-[#111116] border border-purple-500/60 text-xs text-slate-200 flex items-start gap-2">
+        <div class="p-2.5 rounded-[2px] bg-[#131317] border border-purple-500/60 text-xs text-slate-200 flex items-start gap-2">
           <span class="material-symbols-outlined text-[16px] text-purple-400 shrink-0 mt-0.5">public</span>
           <div><span class="font-bold text-purple-300">External Information Used (Outside Uploaded Files):</span> ${escapeHtml((external_info_notice || "").trim() || "Some definitions or formulas use external information from outside your uploaded file.")}</div>
         </div>
       ` : '';
 
     const defsHtml = (core_definitions || []).map(d => `
-        <div class="p-2.5 rounded-lg bg-[#111116] border border-[#38383E]">
+        <div class="p-2.5 rounded-[2px] bg-[#131317] border border-[#2C2C35]">
           <div class="flex items-center justify-between gap-2">
             <span class="font-bold text-xs text-purple-300">${escapeHtml(d.term)}</span>
-            ${d.uses_external_info ? `<span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-purple-950 text-purple-200 border border-purple-500/50 shrink-0">External Info</span>` : ''}
+            ${d.uses_external_info ? `<span class="px-1.5 py-0.5 rounded-[2px] text-[9px] font-semibold bg-purple-950 text-purple-200 border border-purple-500/50 shrink-0">External Info</span>` : ''}
           </div>
           <span class="text-xs text-slate-100 leading-relaxed mt-1 block">${escapeHtml(d.definition)}</span>
         </div>
       `).join("");
 
     const formulasHtml = (key_formulas_or_rules || []).map(f => `
-        <div class="p-2.5 rounded-lg bg-[#111116] border border-purple-500/40">
+        <div class="p-2.5 rounded-[2px] bg-[#131317] border border-purple-500/40">
           <div class="flex items-center justify-between gap-2">
             <span class="font-semibold text-xs text-purple-300 font-label-code">${escapeHtml(f.name)}</span>
-            ${f.uses_external_info ? `<span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-purple-950 text-purple-200 border border-purple-500/50 shrink-0">External Info</span>` : ''}
+            ${f.uses_external_info ? `<span class="px-1.5 py-0.5 rounded-[2px] text-[9px] font-semibold bg-purple-950 text-purple-200 border border-purple-500/50 shrink-0">External Info</span>` : ''}
           </div>
           <span class="text-xs text-slate-100 leading-relaxed mt-1 block font-label-code whitespace-pre-line">${escapeHtml(f.detail)}</span>
         </div>
@@ -2225,26 +2281,23 @@ document.addEventListener("DOMContentLoaded", () => {
       `).join("");
 
     card.innerHTML = `
-        <div class="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-          <span class="material-symbols-outlined text-[18px]">fact_check</span>
-        </div>
-        <div class="bg-[#1E1E24] rounded-xl p-space-md border border-[#38383E] shadow-sm flex flex-col gap-3 flex-1 w-full">
-          <div class="flex items-center justify-between border-b border-[#38383E] pb-2">
-            <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-[20px] text-purple-400">fact_check</span>
-              <div>
-                <span class="font-title-md text-title-md font-bold text-slate-100">${escapeHtml(title || "High-Yield Cheat Sheet")}</span>
-                <span class="text-[11px] text-slate-300 block">Source: ${escapeHtml(doc_name)} · Exam Quick Revision</span>
+        <div class="bg-[#1A1A20] rounded-[2px] p-5 border border-[#30303A] flex flex-col gap-3.5 w-full">
+          <div class="flex items-center justify-between border-b border-[#27272E] pb-3">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="material-symbols-outlined text-[20px] text-purple-400 shrink-0">fact_check</span>
+              <div class="min-w-0">
+                <span class="font-title-md text-base font-semibold text-slate-100 truncate block">${escapeHtml(title || "High-Yield Cheat Sheet")}</span>
+                <span class="text-[11px] text-slate-400 block truncate">Source: ${escapeHtml(doc_name)} · Exam Quick Revision</span>
               </div>
             </div>
-            <span class="text-xs font-bold text-purple-200 bg-[#24193d] px-2.5 py-1 rounded-lg border border-purple-500/50">
-              High-Yield
+            <span class="text-xs font-semibold text-purple-200 bg-[#24193d] px-2.5 py-1 rounded-[2px] border border-purple-500/50 shrink-0">
+              Cheat Sheet
             </span>
           </div>
 
           ${externalBannerHtml}
 
-          ${overview ? `<p class="text-xs text-slate-200 leading-relaxed bg-[#111116] p-2.5 rounded-lg border border-[#38383E]">${escapeHtml(overview)}</p>` : ''}
+          ${overview ? `<p class="text-xs text-slate-200 leading-relaxed bg-[#131317] p-2.5 rounded-[2px] border border-[#2C2C35]">${escapeHtml(overview)}</p>` : ''}
 
           <!-- Core Definitions -->
           ${core_definitions && core_definitions.length > 0 ? `
@@ -2264,7 +2317,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
           <!-- Pitfalls & Exam Traps -->
           ${common_pitfalls && common_pitfalls.length > 0 ? `
-            <div class="p-3 rounded-lg bg-[#111116] border border-purple-500/40 flex flex-col gap-1">
+            <div class="p-3 rounded-[2px] bg-[#131317] border border-purple-500/40 flex flex-col gap-1">
               <span class="text-xs font-bold text-purple-300 flex items-center gap-1">
                 <span class="material-symbols-outlined text-[16px] text-purple-400">warning</span>
                 Common Pitfalls & Exam Mistakes to Avoid
@@ -2275,7 +2328,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
           <!-- Quick Tips -->
           ${quick_tips && quick_tips.length > 0 ? `
-            <div class="p-3 rounded-lg bg-[#111116] border border-[#38383E] flex flex-col gap-1">
+            <div class="p-3 rounded-[2px] bg-[#131317] border border-[#2C2C35] flex flex-col gap-1">
               <span class="text-xs font-bold text-purple-300 flex items-center gap-1">
                 <span class="material-symbols-outlined text-[16px] text-purple-400">lightbulb</span>
                 Quick Exam Tips

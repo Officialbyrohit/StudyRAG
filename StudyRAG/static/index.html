@@ -76,6 +76,36 @@
       }
     }
 
+    /* Thinking text dynamic shimmer sweep */
+    .thinking-shimmer {
+      display: inline-block;
+      background: linear-gradient(
+        90deg,
+        #71717a 0%,
+        #71717a 38%,
+        #f8fafc 50%,
+        #71717a 62%,
+        #71717a 100%
+      );
+      background-size: 300% 100%;
+      background-position: 100% 0;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+      animation: thinking-shimmer 1.8s linear infinite;
+    }
+
+    @keyframes thinking-shimmer {
+      0% {
+        background-position: 100% 0;
+      }
+
+      100% {
+        background-position: 0% 0;
+      }
+    }
+
     /* Collapsible panels */
     #left-panel {
       transition: width 0.3s ease;
@@ -140,7 +170,7 @@
     }
 
     .citations-body.expanded {
-      max-height: 600px;
+      max-height: 1100px;
     }
 
     /* High-contrast dark theme overrides (Crisp, sharp, no blur) */
@@ -376,12 +406,19 @@
 
       <!-- Right Header Actions -->
       <div class="flex items-center gap-space-md">
-        <!-- Header Web Search Toggle Button -->
-        <button id="web-search-toggle-btn" type="button" aria-pressed="false"
-          class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#27272A] hover:bg-[#323238] text-slate-300 border border-[#4B4B54] hover:border-slate-300/60 font-label-meta text-xs font-bold transition-all cursor-pointer active:scale-95"
+        <!-- Header Web Search Toggle Switch -->
+        <button id="web-search-toggle-btn" type="button" role="switch" aria-checked="false" aria-pressed="false"
+          class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-[#23232A] text-slate-200 font-label-meta text-xs font-semibold transition-colors cursor-pointer select-none"
           title="Enable or disable Web Search for answers">
-          <span class="material-symbols-outlined text-[17px]" style="font-variation-settings: 'FILL' 0, 'wght' 400;">language</span>
-          <span>Web Search</span>
+          <span class="flex items-center gap-1.5">
+            <span id="web-search-icon" class="material-symbols-outlined text-[16px] text-slate-400 transition-colors" style="font-variation-settings: 'FILL' 0, 'wght' 400;">language</span>
+            <span>Web Search</span>
+          </span>
+          <span id="web-search-track"
+            class="relative inline-flex items-center w-10 h-5 rounded-full bg-[#4B4B54] transition-colors duration-200 shrink-0">
+            <span id="web-search-thumb"
+              class="inline-block w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-200 translate-x-[2px]"></span>
+          </span>
         </button>
 
         <!-- Continuous Learning Preferences Button (Hidden as requested) -->
@@ -494,9 +531,9 @@
                         class="font-label-meta text-xs text-slate-300 hover:text-white font-bold transition-colors cursor-pointer">Select
                         all</button>
                       <button id="left-panel-collapse-btn"
-                        class="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-white hover:bg-neutral-800 rounded transition-colors cursor-pointer"
+                        class="w-9 h-9 rounded-xl bg-[#1E1E24] hover:bg-[#2A2A30] text-[#60a5fa] flex items-center justify-center transition-all shadow cursor-pointer border border-[#38383E] shrink-0"
                         title="Collapse Sources Panel">
-                        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+                        <span class="material-symbols-outlined text-[20px]">chevron_left</span>
                       </button>
                     </div>
                   </div>
@@ -555,63 +592,14 @@
 
             <!-- Conversation Scroll Canvas -->
             <div id="chat-canvas" class="flex-1 overflow-y-auto p-space-lg pb-36 flex flex-col gap-space-lg">
-
-              <!-- Welcome Bot Message -->
-              <div class="flex items-start gap-space-sm max-w-3xl mr-auto">
-                <div
-                  class="w-9 h-9 rounded-xl bg-[#2563eb] text-white flex items-center justify-center shrink-0 border border-[#38383E]">
-                  <span class="material-symbols-outlined text-[20px]">auto_awesome</span>
-                </div>
-                <div class="flex flex-col gap-space-md flex-1">
-                  <div class="bg-[#1E1E24] p-6 rounded-2xl rounded-tl-none shadow-xl border border-[#38383E]">
-                    <div class="text-slate-100 space-y-3 leading-relaxed font-body-md text-body-md">
-                      <div class="flex items-center gap-2.5">
-                        <h1 class="text-base font-bold text-[#60a5fa] tracking-tight">Welcome to StudyRAG!</h1>
-                      </div>
-                      <p class="text-xs text-slate-200">I am your strictly grounded academic study assistant. Here is
-                        how I protect your learning:</p>
-                      <ul class="space-y-2 text-xs text-slate-200 leading-relaxed pl-1">
-                        <li class="flex items-start">
-                          <span
-                            class="inline-block w-1.5 h-1.5 rounded-full bg-[#60a5fa] mt-1.5 mr-2.5 shrink-0"></span>
-                          <span><strong class="text-white font-bold">100% Grounded Answers:</strong> I answer only from
-                            your uploaded documents.</span>
-                        </li>
-                        <li class="flex items-start">
-                          <span
-                            class="inline-block w-1.5 h-1.5 rounded-full bg-[#60a5fa] mt-1.5 mr-2.5 shrink-0"></span>
-                          <span><strong class="text-white font-bold">Exact Citations:</strong> Every answer links to the
-                            exact page and passage in your notes.</span>
-                        </li>
-                        <li class="flex items-start">
-                          <span
-                            class="inline-block w-1.5 h-1.5 rounded-full bg-[#60a5fa] mt-1.5 mr-2.5 shrink-0"></span>
-                          <span><strong class="text-white font-bold">Zero Hallucination ("I Don't Know"):</strong> If
-                            the answer isn't in your notes, I will explicitly tell you instead of guessing.</span>
-                        </li>
-                        <li class="flex items-start">
-                          <span
-                            class="inline-block w-1.5 h-1.5 rounded-full bg-[#60a5fa] mt-1.5 mr-2.5 shrink-0"></span>
-                          <span><strong class="text-white font-bold">Document Summaries:</strong> Click "Summarize this
-                            document" to get structured chapter summaries.</span>
-                        </li>
-                        <li class="flex items-start">
-                          <span
-                            class="inline-block w-1.5 h-1.5 rounded-full bg-[#60a5fa] mt-1.5 mr-2.5 shrink-0"></span>
-                          <span><strong class="text-white font-bold">Continuous Model Training:</strong> Click
-                            "Helpful", "Needs Work", or "Feedback / Train" on any response to train me to adapt to your
-                            study style.</span>
-                        </li>
-                      </ul>
-                      <p class="text-xs text-slate-300 pt-1">To get started, click the <strong
-                          class="text-[#60a5fa] font-bold">+</strong> button in the search bar or <span
-                          class="text-white font-semibold">"Upload Files"</span> above!</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
             </div>
+
+            <!-- Scroll to Bottom Floating Button -->
+            <button id="scroll-bottom-btn" type="button" aria-label="Scroll to latest message" aria-hidden="true"
+              class="opacity-0 translate-y-2 pointer-events-none absolute bottom-[90px] left-1/2 -translate-x-1/2 z-20 w-9 h-9 rounded-full bg-[#1E1E24] hover:bg-[#2A2A34] text-slate-300 hover:text-white border border-[#3E3E48] shadow-xl flex items-center justify-center transition-all duration-200 cursor-pointer"
+              title="Scroll to bottom">
+              <span class="material-symbols-outlined text-[18px]">arrow_downward</span>
+            </button>
 
             <!-- Floating Center Query Bar -->
             <div id="query-bar-container"
@@ -759,7 +747,7 @@
   </div>
 
   <!-- Client JavaScript -->
-  <script src="/static/js/app.js?v=3.0"></script>
+  <script src="/static/js/app.js?v=3.4"></script>
 </body>
 
 </html>

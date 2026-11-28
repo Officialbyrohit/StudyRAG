@@ -584,6 +584,118 @@
         "CN Syllabus.PDF"
       ],
       "timestamp": "2026-11-27T15:59:10.904864"
+    },
+    {
+      "id": "fb_1795843957802",
+      "user_id": "student@gmail.com",
+      "query": "mera name",
+      "answer": "Aapka naam Rohit hai, hai na? Yaad hai mujhe! Batayein, padhai mein aaj aapki kya madad karoon?",
+      "rating": "like",
+      "opinion": "",
+      "active_docs": [
+        "DSA Syllabus.PDF",
+        "CN Syllabus.PDF",
+        "AI syllabus.pdf"
+      ],
+      "timestamp": "2026-11-28T11:02:37.802805"
+    },
+    {
+      "id": "fb_1795843959635",
+      "user_id": "student@gmail.com",
+      "query": "hurray",
+      "answer": "Hurray! Rohit, batayein padhai mein aaj kya explore karna hai?",
+      "rating": "like",
+      "opinion": "",
+      "active_docs": [
+        "DSA Syllabus.PDF",
+        "CN Syllabus.PDF",
+        "AI syllabus.pdf"
+      ],
+      "timestamp": "2026-11-28T11:02:39.635096"
+    },
+    {
+      "id": "fb_1795843961912",
+      "user_id": "student@gmail.com",
+      "query": "you now hindi",
+      "answer": "Haan, main Hindi samajh sakta hoon aur baat bhi kar sakta hoon! Bataiye, aaj padhai mein main aapki kya madad karoon?",
+      "rating": "like",
+      "opinion": "",
+      "active_docs": [
+        "DSA Syllabus.PDF",
+        "CN Syllabus.PDF",
+        "AI syllabus.pdf"
+      ],
+      "timestamp": "2026-11-28T11:02:41.912155"
+    },
+    {
+      "id": "fb_1795843963897",
+      "user_id": "student@gmail.com",
+      "query": "wow",
+      "answer": "Glad I could help! Whenever you're ready to dive into your studies or if you have any questions, just let me know.",
+      "rating": "like",
+      "opinion": "",
+      "active_docs": [
+        "DSA Syllabus.PDF",
+        "CN Syllabus.PDF",
+        "AI syllabus.pdf"
+      ],
+      "timestamp": "2026-11-28T11:02:43.897579"
+    },
+    {
+      "id": "fb_1795843965927",
+      "user_id": "student@gmail.com",
+      "query": "can you inroduce yourself",
+      "answer": "I'm StudyRAG, your personal study assistant! I'm here to help you navigate your syllabus, understand tricky topics, answer questions about your course materials, and make studying a bit easier. What would you like to work on today?",
+      "rating": "like",
+      "opinion": "",
+      "active_docs": [
+        "DSA Syllabus.PDF",
+        "CN Syllabus.PDF",
+        "AI syllabus.pdf"
+      ],
+      "timestamp": "2026-11-28T11:02:45.927748"
+    },
+    {
+      "id": "fb_1795843968226",
+      "user_id": "student@gmail.com",
+      "query": "today i am too confuse to study",
+      "answer": "It's completely normal to feel that way sometimes! Take a deep breath. We can start with something small and easy if you'd like, or I can help you pick a topic from your syllabus to focus on. What sounds best to you?",
+      "rating": "like",
+      "opinion": "",
+      "active_docs": [
+        "DSA Syllabus.PDF",
+        "CN Syllabus.PDF",
+        "AI syllabus.pdf"
+      ],
+      "timestamp": "2026-11-28T11:02:48.226564"
+    },
+    {
+      "id": "fb_1795843970927",
+      "user_id": "student@gmail.com",
+      "query": "how are you",
+      "answer": "I'm doing well, thank you! How can I help you with your studies today?",
+      "rating": "like",
+      "opinion": "",
+      "active_docs": [
+        "DSA Syllabus.PDF",
+        "CN Syllabus.PDF",
+        "AI syllabus.pdf"
+      ],
+      "timestamp": "2026-11-28T11:02:50.927790"
+    },
+    {
+      "id": "fb_1795843972846",
+      "user_id": "student@gmail.com",
+      "query": "hii",
+      "answer": "Hello! How can I help you with your studies today?",
+      "rating": "like",
+      "opinion": "",
+      "active_docs": [
+        "DSA Syllabus.PDF",
+        "CN Syllabus.PDF",
+        "AI syllabus.pdf"
+      ],
+      "timestamp": "2026-11-28T11:02:52.846173"
     }
   ],
   "learned_rules": [
